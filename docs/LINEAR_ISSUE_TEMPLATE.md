@@ -18,12 +18,12 @@ What we are explicitly not doing.
 
 ## Links
 
-- Relevant `docs/DEVELOPMENT_PLAN.md` section
+- Related Linear issues / project docs
 - Key files / design notes (`docs/DESIGN_SYSTEM.md` for UI)
 
 ## Labels
 
-Use one of: **Feature**, **Bug**, **Improvement**
+Use one of: **feature**, **bug**, **chore**, **debt**
 
 ## Status guidance
 
