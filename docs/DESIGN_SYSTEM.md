@@ -293,7 +293,7 @@ Before shipping a new page or panel:
 | Button variants | `components/ui/button.tsx` |
 | Canvas checkered bg | `.canvas-checkered` in `globals.css` |
 | Utils | `lib/utils.ts` (`cn`) |
-| Roadmap | `docs/DEVELOPMENT_PLAN.md` |
+| Roadmap / backlog | [Linear — Planogram](https://linear.app/planogram/project/planogram) |
 
 ---
 

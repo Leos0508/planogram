@@ -48,5 +48,5 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 
 ## Docs
 
-- Roadmap: [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md)
+- Roadmap / backlog: [Linear — Planogram](https://linear.app/planogram/project/planogram)
 - Design system: [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)

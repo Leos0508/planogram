@@ -1,5 +1,5 @@
 ---
-description: Planogram delivery workflow — Linear, PRs, development plan, design system, sprints
+description: Planogram delivery workflow — Linear SoT, PRs, design system, sprints
 alwaysApply: true
 ---
 
@@ -9,26 +9,26 @@ This rule applies to **this repo only**. Prefer small, reviewable changes.
 
 ## Before starting work
 
-1. Read `docs/DEVELOPMENT_PLAN.md` — confirm the task matches the current sprint.
-2. Via **Linear MCP** (workspace `planogram`, team **Planogram** / `PLA`, project **Planogram**):
-   - Find or create the issue; put it in **Todo** before coding.
-   - Prefer an existing sprint issue over inventing chat-only todos.
-3. Update the plan **only if** sprint scope/order/exit criteria changed (not for every tiny chore).
+1. Via **Linear MCP** (workspace `planogram`, team **Planogram** / `PLA`, project **Planogram**): find the issue; confirm status and sprint membership (Todo vs Backlog).
+2. Prefer an existing Linear issue over inventing chat-only todos; put work in **Todo** before coding.
+3. Do not maintain a parallel roadmap in the repo — Linear is the only development plan.
 
-## Linear (source of truth for tickets)
+## Linear (sole source of truth)
 
-- Manage work with Linear MCP; do not keep a parallel todo list in chat.
+- Linear owns scope, priority, status, acceptance criteria, and sprint membership.
+- Project: https://linear.app/planogram/project/planogram
 - Statuses: `Backlog` → `Todo` → `In Progress` → `In Review` → `Done` (or `Canceled` / `Duplicate`).
 - Coding → **In Progress**; PR open → **In Review**; merged to `main` → **Done**.
 - Issues need enough context: goal, acceptance criteria, out of scope, links.
 - Use the Linear project doc **Issue template**, or `docs/LINEAR_ISSUE_TEMPLATE.md`.
-- If the ticket is unclear, add/update docs under `docs/` and link them from the issue.
-- Labels: Feature / Bug / Improvement when useful.
+- Labels: feature / bug / chore / debt when useful.
+- Create a Linear issue before starting any new planned work.
 
 ## Sprints
 
-- Define each sprint before the first ticket: goal (1 sentence), exit criteria, ordered Linear IDs in `docs/DEVELOPMENT_PLAN.md`.
-- Prefer ~3–6 issues. Linear holds detail; the plan holds the sprint summary (do not duplicate long descriptions).
+- Define sprint membership in Linear only (Todo = this sprint, Backlog = later).
+- Prefer ~3–6 Todo issues at a time.
+- Do not duplicate sprint tables or roadmaps in markdown.
 
 ## GitHub (`main` is protected)
 
@@ -43,5 +43,4 @@ This rule applies to **this repo only**. Prefer small, reviewable changes.
 ## After finishing
 
 1. Linear: **In Review** (PR open) → **Done** (merged), unless waiting on review.
-2. Update `docs/DEVELOPMENT_PLAN.md` when a sprint item completes or the next-sprint list changes.
-3. Keep any new docs accurate and linked from Linear.
+2. Keep any technical docs under `docs/` accurate and linked from the Linear issue when relevant.
