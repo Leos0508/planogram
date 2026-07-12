@@ -1,0 +1,47 @@
+---
+description: Planogram delivery workflow — Linear, PRs, development plan, design system, sprints
+alwaysApply: true
+---
+
+# Planogram agent workflow
+
+This rule applies to **this repo only**. Prefer small, reviewable changes.
+
+## Before starting work
+
+1. Read `docs/DEVELOPMENT_PLAN.md` — confirm the task matches the current sprint.
+2. Via **Linear MCP** (workspace `planogram`, team **Planogram** / `PLA`, project **Planogram**):
+   - Find or create the issue; put it in **Todo** before coding.
+   - Prefer an existing sprint issue over inventing chat-only todos.
+3. Update the plan **only if** sprint scope/order/exit criteria changed (not for every tiny chore).
+
+## Linear (source of truth for tickets)
+
+- Manage work with Linear MCP; do not keep a parallel todo list in chat.
+- Statuses: `Backlog` → `Todo` → `In Progress` → `In Review` → `Done` (or `Canceled` / `Duplicate`).
+- Coding → **In Progress**; PR open → **In Review**; merged to `main` → **Done**.
+- Issues need enough context: goal, acceptance criteria, out of scope, links.
+- Use the Linear project doc **Issue template**, or `docs/LINEAR_ISSUE_TEMPLATE.md`.
+- If the ticket is unclear, add/update docs under `docs/` and link them from the issue.
+- Labels: Feature / Bug / Improvement when useful.
+
+## Sprints
+
+- Define each sprint before the first ticket: goal (1 sentence), exit criteria, ordered Linear IDs in `docs/DEVELOPMENT_PLAN.md`.
+- Prefer ~3–6 issues. Linear holds detail; the plan holds the sprint summary (do not duplicate long descriptions).
+
+## GitHub (`main` is protected)
+
+- Never commit directly to `main`. Use a feature branch (prefer `pla-N-short-slug`).
+- Open a PR into `main` when work is ready (`gh pr create`). Include Summary, Test plan, and `PLA-xxx`.
+- No force-push to `main`; do not bypass branch protection.
+
+## Design system
+
+- UI follows `docs/DESIGN_SYSTEM.md` (semantic tokens, thin UI, engine is truth for mm).
+
+## After finishing
+
+1. Linear: **In Review** (PR open) → **Done** (merged), unless waiting on review.
+2. Update `docs/DEVELOPMENT_PLAN.md` when a sprint item completes or the next-sprint list changes.
+3. Keep any new docs accurate and linked from Linear.

@@ -278,15 +278,27 @@ Goal: Feel like a real design tool.
 
 ---
 
-## 7. Suggested next sprint (post-v1)
+## 7. Current sprint — Phase 5 editor depth
 
-| # | Task | Effort | Phase |
-|---|------|--------|-------|
-| 1 | Multi-stack placement UI (`stackIndex > 0`) | M | 5 |
-| 2 | Alignment guides (Figma-style snap lines) | M | 5 |
-| 3 | Full PDF export (multi-page, dimensions) | L | 5 |
-| 4 | Per-shelf fixed fixture width | M | 5 |
-| 5 | 3D preview scaffold | L | 5 |
+**Goal:** Ship multi-stack placement and alignment guides so stacked SKUs and snap feel match a real design tool.
+
+**Exit criteria:** Place/move items on `stackIndex > 0` from the UI; alignment guides visible while snapping; both covered by Linear Done + merged PRs.
+
+| Order | Linear | Task | Effort |
+|-------|--------|------|--------|
+| 1 | [PLA-5](https://linear.app/planogram/issue/PLA-5) | Multi-stack placement UI | M |
+| 2 | [PLA-7](https://linear.app/planogram/issue/PLA-7) | Alignment guides | M |
+
+**Backlog (not this sprint):**
+
+| Linear | Task | Effort |
+|--------|------|--------|
+| [PLA-6](https://linear.app/planogram/issue/PLA-6) | Full PDF export | L |
+| [PLA-8](https://linear.app/planogram/issue/PLA-8) | Per-shelf fixed fixture width | M |
+| [PLA-9](https://linear.app/planogram/issue/PLA-9) | 3D preview scaffold | L |
+| [PLA-10](https://linear.app/planogram/issue/PLA-10) | Engine coverage + canvas width regression | S |
+
+**Workflow:** Linear is source of truth (`planogram` workspace). See `.cursor/rules/project-workflow.mdc`, `docs/LINEAR_ISSUE_TEMPLATE.md`, `docs/GITHUB_LINEAR_AUTOMATION.md`. PRs required into `main`; required approving review count is **0** (solo merge after CI).
 
 ---
 
@@ -441,6 +453,9 @@ prisma/
 ## 16. References
 
 - **Design system:** `docs/DESIGN_SYSTEM.md`
+- **Workflow:** `.cursor/rules/project-workflow.mdc`
+- **Linear issue template:** `docs/LINEAR_ISSUE_TEMPLATE.md`
+- **GitHub ↔ Linear:** `docs/GITHUB_LINEAR_AUTOMATION.md`
 - Engine pipeline: `lib/planogram-engine/index.ts` module map comment
 - Tunables: `lib/planogram-engine/constant.ts`
 - CI: `.github/workflows/ci.yml`
