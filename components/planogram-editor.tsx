@@ -27,6 +27,7 @@ import {
   computeShelfLayout,
   itemFacingsWide,
   MAX_FACINGS_WIDE,
+  MAX_STACK_INDEX,
   nudgeItemX,
   planogramDetailToState,
   validateShelfPlacements,
@@ -286,6 +287,67 @@ export default function PlanogramEditor({
     [planogram.id, toast],
   );
 
+  const changeStackIndex = useCallback(
+    async (itemId: string, delta: number) => {
+      const found = stateRef.current.shelves
+        .flatMap((shelf) => shelf.items.map((item) => ({ shelf, item })))
+        .find(({ item }) => item.id === itemId);
+      if (!found) return;
+
+      const fromStack = found.item.stackIndex;
+      const toStack = Math.min(
+        MAX_STACK_INDEX,
+        Math.max(0, fromStack + delta),
+      );
+      if (toStack === fromStack) return;
+
+      const candidate: PlanogramItem = { ...found.item, stackIndex: toStack };
+      const placement = canPlace(
+        candidate,
+        found.shelf.id,
+        stateRef.current.shelves,
+        stateRef.current.config,
+      );
+      if (!placement.ok) {
+        toast.error("Not enough space on that stack tier");
+        return;
+      }
+
+      const from = {
+        shelfId: found.item.shelfId,
+        x: found.item.x,
+        stackIndex: fromStack,
+      };
+      const to = {
+        shelfId: found.item.shelfId,
+        x: found.item.x,
+        stackIndex: toStack,
+      };
+
+      setState((prev) => moveItemInState(prev, itemId, to));
+
+      const response = await updatePlanogramItemPosition({
+        planogramId: planogram.id,
+        itemId,
+        shelfId: to.shelfId,
+        x: to.x,
+        stackIndex: to.stackIndex,
+      });
+
+      if (!response.ok) {
+        setState((prev) => moveItemInState(prev, itemId, from));
+        console.error("[changeStackIndex]", response.message);
+        toast.error(response.message);
+        return;
+      }
+
+      if (!applyingHistoryRef.current) {
+        historyRef.current.push({ type: "move", itemId, from, to });
+      }
+    },
+    [planogram.id, toast],
+  );
+
   const handleUndo = useCallback(async () => {
     const entry = historyRef.current.popUndo();
     if (!entry) return;
@@ -456,6 +518,14 @@ export default function PlanogramEditor({
       void changeFacings(selectedItemId, delta);
     },
     [changeFacings, selectedItemId],
+  );
+
+  const changeSelectedStackIndex = useCallback(
+    (delta: number) => {
+      if (!selectedItemId) return;
+      void changeStackIndex(selectedItemId, delta);
+    },
+    [changeStackIndex, selectedItemId],
   );
 
   const {
@@ -703,6 +773,12 @@ export default function PlanogramEditor({
 
       if (!selectedItemId || drag) return;
 
+      if (event.key === "2") {
+        event.preventDefault();
+        void changeStackIndex(selectedItemId, event.shiftKey ? -1 : 1);
+        return;
+      }
+
       if (event.key === "3") {
         event.preventDefault();
         void changeFacings(selectedItemId, event.shiftKey ? -1 : 1);
@@ -726,6 +802,7 @@ export default function PlanogramEditor({
     };
   }, [
     changeFacings,
+    changeStackIndex,
     cancelDrag,
     drag,
     flushNudgePersist,
@@ -793,7 +870,9 @@ export default function PlanogramEditor({
         selectedItemId={selectedItemId}
         skuById={skuById}
         onChangeFacings={changeSelectedFacings}
+        onChangeStackIndex={changeSelectedStackIndex}
         onShelfLayout={(mode) => void applyShelfLayout(mode)}
+        maxStackIndex={MAX_STACK_INDEX}
       />
 
       {showCursorPreview && (

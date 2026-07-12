@@ -16,6 +16,9 @@ export const SHELF_DROP_LINE_INSET_MM = 8;
 /** Max px distance to snap candidate edges to sibling items (screen space). */
 export const SNAP_THRESHOLD_PX = 16;
 
+/** Max shelf-wide stack tier (0 = base row). */
+export const MAX_STACK_INDEX = 9;
+
 export function mmToPx(mm: number, scale = PX_PER_MM) {
   return mm * scale;
 }

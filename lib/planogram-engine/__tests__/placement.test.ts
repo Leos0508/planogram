@@ -121,6 +121,79 @@ describe("canPlace", () => {
     );
     expect(allowed.ok).toBe(true);
   });
+  it("allows same X on a different stack tier", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 100,
+        height: 200,
+        stackIndex: 0,
+        facingsWide: 1,
+      },
+    ]);
+
+    const result = canPlace(
+      {
+        id: "preview",
+        shelfId: "s1",
+        skuId: "sku2",
+        x: 0,
+        width: 100,
+        height: 150,
+        stackIndex: 1,
+        facingsWide: 1,
+      },
+      "s1",
+      state.shelves,
+      state.config,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects overlapping items on the same upper stack tier", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 100,
+        height: 200,
+        stackIndex: 0,
+        facingsWide: 1,
+      },
+      {
+        id: "i2",
+        shelfId: "s1",
+        skuId: "sku2",
+        x: 0,
+        width: 100,
+        height: 150,
+        stackIndex: 1,
+        facingsWide: 1,
+      },
+    ]);
+
+    const result = canPlace(
+      {
+        id: "preview",
+        shelfId: "s1",
+        skuId: "sku3",
+        x: 40,
+        width: 100,
+        height: 150,
+        stackIndex: 1,
+        facingsWide: 1,
+      },
+      "s1",
+      state.shelves,
+      state.config,
+    );
+    expect(result.ok).toBe(false);
+  });
 });
 
 describe("nudgeItemX", () => {
@@ -210,5 +283,32 @@ describe("projectDrop", () => {
     });
 
     expect(result.ok).toBe(false);
+  });
+
+  it("allows stackIndex 1 over an occupied base row at the same X", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 200,
+        height: 200,
+        stackIndex: 0,
+        facingsWide: 1,
+      },
+    ]);
+
+    const result = projectDrop(state, {
+      pointerMm: { x: 80, y: 500 },
+      sku: { width: 100, height: 150 },
+      stackIndex: 1,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.stackIndex).toBe(1);
+      expect(result.shelfId).toBe("s1");
+    }
   });
 });

@@ -29,13 +29,17 @@ export default function PlanogramItemInspector({
   selectedItemId,
   skuById,
   onChangeFacings,
+  onChangeStackIndex,
   onShelfLayout,
+  maxStackIndex,
 }: {
   state: PlanogramState;
   selectedItemId: string | null;
   skuById: Map<string, Sku>;
   onChangeFacings: (delta: number) => void;
+  onChangeStackIndex: (delta: number) => void;
   onShelfLayout: (mode: ShelfLayoutMode) => void;
+  maxStackIndex: number;
 }) {
   if (!selectedItemId) return null;
 
@@ -101,6 +105,32 @@ export default function PlanogramItemInspector({
             </Button>
           </dd>
         </div>
+        <div className="flex items-center justify-between gap-2">
+          <dt className="text-muted-foreground">Stack</dt>
+          <dd className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-xs"
+              onClick={() => onChangeStackIndex(-1)}
+              disabled={item.stackIndex <= 0}
+              title="Lower stack tier (Shift+2)"
+            >
+              <MinusIcon className="size-3" />
+            </Button>
+            <span className="min-w-6 text-center font-mono">{item.stackIndex}</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-xs"
+              onClick={() => onChangeStackIndex(1)}
+              disabled={item.stackIndex >= maxStackIndex}
+              title="Raise stack tier (2)"
+            >
+              <PlusIcon className="size-3" />
+            </Button>
+          </dd>
+        </div>
         <div className="flex justify-between gap-2">
           <dt className="text-muted-foreground">Footprint</dt>
           <dd className="font-mono">{footprintWidth} mm wide</dd>
@@ -130,7 +160,8 @@ export default function PlanogramItemInspector({
       ) : null}
 
       <p className="mt-2 text-[10px] text-muted-foreground">
-        3 / Shift+3 facings · Arrow nudge · Delete removes
+        Shift+drop stacks · 2 / Shift+2 stack · 3 / Shift+3 facings · Arrow
+        nudge · Delete removes
       </p>
     </div>
   );

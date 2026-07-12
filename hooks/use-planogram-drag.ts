@@ -86,7 +86,8 @@ export function usePlanogramDrag({
       clientY: number,
       sku: DragSku,
       mode: "palette" | "item",
-      itemId?: string,
+      itemId: string | undefined,
+      stackOnDrop: boolean,
     ): PlanogramDragState | null => {
       const pointerPx = clientToCanvasLocalRef.current?.(clientX, clientY);
       if (!pointerPx) return null;
@@ -97,13 +98,17 @@ export function usePlanogramDrag({
       });
 
       const scale = viewportScaleRef.current;
+      // Shift+drop places on shelf-wide tier 1; otherwise palette uses base row.
+      // Item moves without Shift keep the item's current stack via horizontal drag.
       const projection =
-        mode === "item" && itemId
+        mode === "item" && itemId && !stackOnDrop
           ? projectHorizontalDrag(stateRef.current, itemId, pointerMm, scale)
           : projectDrop(stateRef.current, {
               pointerMm,
               sku: { width: sku.width, height: sku.height },
               viewportScale: scale,
+              stackIndex: stackOnDrop ? 1 : 0,
+              excludeItemId: mode === "item" ? itemId : undefined,
             });
 
       return {
@@ -139,6 +144,7 @@ export function usePlanogramDrag({
           sku,
           mode,
           itemId,
+          moveEvent.shiftKey,
         );
         if (next) setDrag(next);
       };
@@ -154,6 +160,7 @@ export function usePlanogramDrag({
           sku,
           mode,
           itemId,
+          upEvent.shiftKey,
         );
 
         if (next?.projection.ok) {
@@ -181,7 +188,14 @@ export function usePlanogramDrag({
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
 
-      const next = projectAt(event.clientX, event.clientY, sku, mode, itemId);
+      const next = projectAt(
+        event.clientX,
+        event.clientY,
+        sku,
+        mode,
+        itemId,
+        event.shiftKey,
+      );
       if (next) setDrag(next);
     },
     [projectAt],
