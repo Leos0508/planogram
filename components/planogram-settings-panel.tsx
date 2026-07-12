@@ -1,0 +1,200 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  addPlanogramShelf,
+  removePlanogramShelf,
+  updatePlanogram,
+} from "@/lib/planograms/actions";
+import type { PlanogramDetail } from "@/lib/planograms/queries";
+import { parseNonNegativeInt } from "@/lib/validation/sku";
+import { PlusIcon, Trash2Icon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+
+export default function PlanogramSettingsPanel({
+  planogram,
+}: {
+  planogram: PlanogramDetail;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const [name, setName] = useState(planogram.name);
+  const [topClearance, setTopClearance] = useState(String(planogram.topClearance));
+  const [stackGap, setStackGap] = useState(String(planogram.stackGap));
+
+  const shelves = [...planogram.shelves].sort((a, b) => a.index - b.index);
+
+  const handleSave = (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+
+    const clearance = parseNonNegativeInt(topClearance);
+    const gap = parseNonNegativeInt(stackGap);
+    if (clearance === null || gap === null) {
+      setError("Clearance and gap must be non-negative integers (mm)");
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await updatePlanogram({
+        id: planogram.id,
+        name: name.trim(),
+        topClearance: clearance,
+        stackGap: gap,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setMessage("Settings saved");
+      router.refresh();
+    });
+  };
+
+  const handleAddShelf = () => {
+    setError(null);
+    setMessage(null);
+    startTransition(async () => {
+      const result = await addPlanogramShelf({ planogramId: planogram.id });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setMessage("Shelf added");
+      router.refresh();
+    });
+  };
+
+  const handleRemoveShelf = (shelfId: string, index: number) => {
+    if (!window.confirm(`Remove shelf ${index + 1}?`)) return;
+
+    setError(null);
+    setMessage(null);
+    startTransition(async () => {
+      const result = await removePlanogramShelf({
+        planogramId: planogram.id,
+        shelfId,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setMessage("Shelf removed");
+      router.refresh();
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form onSubmit={handleSave} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="settings-name">Name</Label>
+          <Input
+            id="settings-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="settings-clearance">Top clearance (mm)</Label>
+            <Input
+              id="settings-clearance"
+              type="number"
+              min={0}
+              value={topClearance}
+              onChange={(event) => setTopClearance(event.target.value)}
+              className="font-mono"
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="settings-gap">Stack gap (mm)</Label>
+            <Input
+              id="settings-gap"
+              type="number"
+              min={0}
+              value={stackGap}
+              onChange={(event) => setStackGap(event.target.value)}
+              className="font-mono"
+              required
+            />
+          </div>
+        </div>
+
+        <Button type="submit" size="sm" disabled={pending}>
+          Save settings
+        </Button>
+      </form>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-widest">
+            Shelves
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={handleAddShelf}
+            disabled={pending}
+          >
+            <PlusIcon className="size-3" />
+            Add
+          </Button>
+        </div>
+
+        <ul className="flex flex-col gap-1">
+          {shelves.map((shelf) => (
+            <li
+              key={shelf.id}
+              className="flex items-center justify-between gap-2 border bg-card px-3 py-2 text-sm"
+            >
+              <span className="font-mono text-xs">
+                Shelf {shelf.index + 1}
+                <span className="ml-2 text-muted-foreground">
+                  {shelf.items.length} item{shelf.items.length === 1 ? "" : "s"}
+                </span>
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                title={`Remove shelf ${shelf.index + 1}`}
+                disabled={pending || shelves.length <= 1}
+                onClick={() => handleRemoveShelf(shelf.id, shelf.index)}
+              >
+                <Trash2Icon className="size-3 text-destructive" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {error ? (
+        <p className="text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {message ? (
+        <p className="text-xs text-muted-foreground" role="status">
+          {message}
+        </p>
+      ) : null}
+
+      <p className="text-xs text-muted-foreground">
+        Drag SKUs from the bottom tray onto a shelf. Select an item and press
+        Delete to remove it.
+      </p>
+    </div>
+  );
+}

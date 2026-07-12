@@ -1,0 +1,72 @@
+import type { PlanogramItem } from "./types";
+import { itemFootprintWidth } from "./facings";
+
+type SnapEdge = {
+  position: (x: number) => number;
+  xForLine: (line: number) => number;
+};
+
+const DISTANCE_EPS_MM = 0.001;
+
+const candidateEdges = (width: number): SnapEdge[] => [
+  { position: (x) => x, xForLine: (line) => line },
+  { position: (x) => x + width, xForLine: (line) => line - width },
+  { position: (x) => x + width / 2, xForLine: (line) => line - width / 2 },
+];
+
+function snapLinesForItem(item: Pick<PlanogramItem, "x" | "width" | "facingsWide">): number[] {
+  const width = itemFootprintWidth(item);
+  return [item.x, item.x + width, item.x + width / 2];
+}
+
+/**
+ * Snap a candidate x to nearby items on the same shelf row (stackIndex).
+ * Deterministic: sorted targets, closest edge wins, then smallest movement.
+ */
+export function snapXToShelfItems(
+  rawX: number,
+  width: number,
+  others: Pick<PlanogramItem, "x" | "width" | "facingsWide">[],
+  thresholdMm: number,
+): number {
+  if (others.length === 0 || thresholdMm <= 0) {
+    return rawX;
+  }
+
+  let bestX = rawX;
+  let bestDistance = thresholdMm + 1;
+  let bestMovement = Number.POSITIVE_INFINITY;
+
+  const sortedOthers = [...others].sort(
+    (a, b) =>
+      a.x - b.x || itemFootprintWidth(a) - itemFootprintWidth(b),
+  );
+
+  for (const other of sortedOthers) {
+    for (const line of snapLinesForItem(other)) {
+      for (const edge of candidateEdges(width)) {
+        const distance = Math.abs(edge.position(rawX) - line);
+        if (distance > thresholdMm) {
+          continue;
+        }
+
+        const snappedX = Math.max(0, edge.xForLine(line));
+        const movement = Math.abs(snappedX - rawX);
+        const isCloser = distance < bestDistance - DISTANCE_EPS_MM;
+        const isTie =
+          Math.abs(distance - bestDistance) <= DISTANCE_EPS_MM &&
+          movement < bestMovement - DISTANCE_EPS_MM;
+
+        if (!isCloser && !isTie) {
+          continue;
+        }
+
+        bestDistance = distance;
+        bestMovement = movement;
+        bestX = snappedX;
+      }
+    }
+  }
+
+  return bestX;
+}

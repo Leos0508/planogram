@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SKU {
+  id             String          @id @default(uuid())
+  name           String
+  sku            String          @unique
+  width          Int
+  height         Int
+  imageUrl       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  planogramItems PlanogramItem[]
+}
+
+model Planogram {
+  id           String   @id @default(uuid())
+  name         String
+  topClearance Int
+  stackGap     Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  shelves PlanogramShelf[]
+}
+
+model PlanogramShelf {
+  id          String   @id @default(uuid())
+  planogramId String
+  index       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  planogram           Planogram       @relation(fields: [planogramId], references: [id])
+  planogramShelfItems PlanogramItem[]
+}
+
+model PlanogramItem {
+  id               String   @id @default(uuid())
+  planogramShelfId String
+  skuId            String
+  x                Int
+  width            Int
+  height           Int
+  stackIndex       Int      @default(0)
+  facingsWide      Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  planogramShelf PlanogramShelf @relation(fields: [planogramShelfId], references: [id])
+  sku            SKU            @relation(fields: [skuId], references: [id])
+
+  @@index([planogramShelfId])
+}
