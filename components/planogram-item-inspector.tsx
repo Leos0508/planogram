@@ -45,7 +45,7 @@ export default function PlanogramItemInspector({
   const { shelf, item } = found;
   const sku = skuById.get(item.skuId);
   const footprintWidth = item.width * item.facingsWide;
-  const baseRowCount = shelf.items.filter((row) => row.stackIndex === 0).length;
+  const baseRowCount = shelf.items.filter((row) => row.y === 0).length;
 
   return (
     <div className="absolute bottom-24 right-3 z-30 w-56 border bg-background/95 p-3 shadow-sm">

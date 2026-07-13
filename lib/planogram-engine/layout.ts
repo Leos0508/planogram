@@ -21,6 +21,11 @@ export type LayoutPreviewItem = Omit<PlanogramItem, "id"> & {
   shelfId: string;
 };
 
+/** Vertical reach of an item above the shelf line (mm). */
+export function itemReachMm(item: Pick<PlanogramItem, "y" | "height">): number {
+  return item.y + item.height;
+}
+
 export function withCandidateOnShelf(
   shelves: PlanogramShelf[],
   shelfId: string,
@@ -43,31 +48,29 @@ export function withCandidateOnShelf(
   });
 }
 
-export function stackHeightBelow(
-  items: PlanogramItem[],
-  target: Pick<PlanogramItem, "stackIndex">,
-  config: PlanogramConfig,
-): number {
-  return items
-    .filter(
-      (item) => item.stackIndex < target.stackIndex && item.stackIndex >= 0,
-    )
-    .reduce((sum, item) => sum + item.height + config.stackGap, 0);
-}
-
-function maxContentHeightMm(
+/** Item-area height including top padding above the tallest item. */
+export function itemAreaHeightMm(
   items: PlanogramItem[],
   config: PlanogramConfig,
 ): number {
-  let max = 0;
+  let maxReach = 0;
 
   for (const item of items) {
-    const below = stackHeightBelow(items, item, config);
-    const reach = below + item.stackIndex * config.stackGap + item.height;
-    max = Math.max(max, reach);
+    maxReach = Math.max(maxReach, itemReachMm(item));
   }
 
-  return Math.max(MIN_SHELF_CONTENT_HEIGHT_MM, max);
+  return Math.max(
+    MIN_SHELF_CONTENT_HEIGHT_MM,
+    maxReach + config.topClearance,
+  );
+}
+
+/** Max vertical reach (y + height) allowed for placement on a shelf. */
+export function shelfContentBandMm(
+  items: PlanogramItem[],
+  config: PlanogramConfig,
+): number {
+  return itemAreaHeightMm(items, config) - config.topClearance;
 }
 
 /** Stack shelf rows: [topClearance] [item area] [shelf line] → repeat. */
@@ -80,7 +83,7 @@ export function computeShelfPositions(
 
   return sorted.map((shelf) => {
     cursorY += config.topClearance;
-    cursorY += maxContentHeightMm(shelf.items, config);
+    cursorY += itemAreaHeightMm(shelf.items, config);
 
     return { ...shelf, yMm: cursorY };
   });
@@ -93,7 +96,7 @@ function buildShelfLayouts(
   return [...shelves]
     .sort((a, b) => a.index - b.index)
     .map((shelf) => {
-      const contentHeightMm = maxContentHeightMm(shelf.items, config);
+      const contentHeightMm = itemAreaHeightMm(shelf.items, config);
 
       return {
         shelfId: shelf.id,
@@ -106,15 +109,12 @@ function buildShelfLayouts(
     });
 }
 
-/** Bottom of item sits on the shelf line; stackIndex grows upward. */
+/** Item rect in planogram mm; y is bottom offset above shelf line. */
 export function computeItemRect(
-  item: Pick<PlanogramItem, "x" | "width" | "height" | "stackIndex" | "facingsWide">,
+  item: Pick<PlanogramItem, "x" | "width" | "height" | "y" | "facingsWide">,
   shelfYMm: number,
-  config: PlanogramConfig,
-  stackHeightBelowMm: number,
 ): RectMm {
-  const bottomMm =
-    shelfYMm - stackHeightBelowMm - item.stackIndex * config.stackGap;
+  const bottomMm = shelfYMm - item.y;
 
   return {
     x: item.x,
@@ -190,17 +190,10 @@ export function positionedShelves(
 }
 
 export function computeItemRectOnShelf(
-  item: Pick<PlanogramItem, "x" | "width" | "height" | "stackIndex" | "facingsWide">,
+  item: Pick<PlanogramItem, "x" | "width" | "height" | "y" | "facingsWide">,
   shelf: PlanogramShelf,
-  shelfItems: PlanogramItem[],
-  config: PlanogramConfig,
 ): RectMm {
-  return computeItemRect(
-    item,
-    shelf.yMm,
-    config,
-    stackHeightBelow(shelfItems, item, config),
-  );
+  return computeItemRect(item, shelf.yMm);
 }
 
 export function computePlanogramLayout(
@@ -213,11 +206,6 @@ export function computePlanogramLayout(
   const positioned = positionedShelves(state.shelves, state.config, preview);
   const shelfLayouts = buildShelfLayouts(positioned, state.config);
   const positionedById = new Map(positioned.map((shelf) => [shelf.id, shelf]));
-  const previewShelfItems = preview
-    ? withCandidateOnShelf(state.shelves, preview.shelfId, preview.item).find(
-        (shelf) => shelf.id === preview.shelfId,
-      )!.items
-    : [];
 
   const committedRects: RectMm[] = [];
   const items = state.shelves.flatMap((shelf) => {
@@ -225,19 +213,14 @@ export function computePlanogramLayout(
     if (!positionedShelf) return [];
 
     return shelf.items.map((item) => {
-      const rect = computeItemRectOnShelf(
-        item,
-        positionedShelf,
-        shelf.items,
-        state.config,
-      );
+      const rect = computeItemRectOnShelf(item, positionedShelf);
       committedRects.push(rect);
 
       return {
         itemId: item.id,
         shelfId: shelf.id,
         skuId: item.skuId,
-        stackIndex: item.stackIndex,
+        y: item.y,
         rect,
         valid: true,
       };
@@ -247,14 +230,7 @@ export function computePlanogramLayout(
   const heightRects = [...committedRects];
   if (previewItem) {
     const positionedShelf = positionedById.get(previewItem.shelfId)!;
-    heightRects.push(
-      computeItemRectOnShelf(
-        previewItem,
-        positionedShelf,
-        previewShelfItems,
-        state.config,
-      ),
-    );
+    heightRects.push(computeItemRectOnShelf(previewItem, positionedShelf));
   }
 
   const contentWidthMm = computeContentWidthMm(

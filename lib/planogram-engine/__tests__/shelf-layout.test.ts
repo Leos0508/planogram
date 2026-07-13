@@ -20,7 +20,7 @@ function item(
     x,
     width,
     height: 200,
-    stackIndex: 0,
+    y: 0,
     facingsWide,
   };
 }

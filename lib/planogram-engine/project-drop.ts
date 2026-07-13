@@ -10,7 +10,7 @@ import {
 } from "./layout";
 import { computePlanogramLayoutCached } from "./layout-cache";
 import { canPlace } from "./placement";
-import { snapXToShelfItems } from "./snap";
+import { snapXToShelfItems, snapYToShelfItems } from "./snap";
 import type {
   DropProjection,
   PlanogramShelf,
@@ -22,7 +22,10 @@ export type ProjectDropInput = {
   pointerMm: PointMm;
   sku: { width: number; height: number };
   facingsWide?: number;
-  stackIndex?: number;
+  /** Override snapped y (shelf-local bottom, mm). */
+  y?: number;
+  /** When true, skip Y snap targets (float mode). */
+  forceFloat?: boolean;
   /** When moving an existing item, pass its id so collision skips self. */
   excludeItemId?: string;
   /** Viewport zoom scale for screen-space snap threshold. Defaults to 1. */
@@ -31,11 +34,12 @@ export type ProjectDropInput = {
 
 function buildCandidate(
   shelfId: string,
+  shelfYMm: number,
   pointer: PointMm,
   input: ProjectDropInput,
   shelves: PlanogramShelf[],
+  stackGap: number,
 ): LayoutPreviewItem {
-  const stackIndex = input.stackIndex ?? 0;
   const facingsWide = input.facingsWide ?? DEFAULT_FACINGS_WIDE;
   const id = previewItemId({ id: input.excludeItemId });
   const footprintWidth = input.sku.width * facingsWide;
@@ -44,23 +48,47 @@ function buildCandidate(
 
   const shelf = shelves.find((s) => s.id === shelfId);
   const siblings =
-    shelf?.items.filter(
-      (item) => item.id !== id && item.stackIndex === stackIndex,
-    ) ?? [];
+    shelf?.items.filter((item) => item.id !== id) ?? [];
+
+  const snappedX = snapXToShelfItems(
+    rawX,
+    footprintWidth,
+    siblings,
+    threshold,
+  );
+
+  const rawBottomY = Math.max(0, shelfYMm - pointer.y - input.sku.height / 2);
+
+  const snappedY = input.forceFloat
+    ? rawBottomY
+    : input.y !== undefined
+      ? input.y
+      : snapYToShelfItems(
+          rawBottomY,
+          {
+            x: snappedX,
+            width: input.sku.width,
+            height: input.sku.height,
+            facingsWide,
+          },
+          siblings,
+          stackGap,
+          threshold,
+        );
 
   return {
     id,
     shelfId,
     skuId: "",
-    x: snapXToShelfItems(rawX, footprintWidth, siblings, threshold),
+    x: snappedX,
     width: input.sku.width,
     height: input.sku.height,
-    stackIndex,
+    y: snappedY,
     facingsWide,
   };
 }
 
-/** Map pointer position → shelf + x placement (palette drag or item move). */
+/** Map pointer position → shelf + x/y placement (palette drag or item move). */
 export function projectDrop(
   state: PlanogramState,
   input: ProjectDropInput,
@@ -80,9 +108,11 @@ export function projectDrop(
 
   const candidate = buildCandidate(
     shelfLayout.shelfId,
+    shelfLayout.yMm,
     pointer,
     input,
     state.shelves,
+    state.config.stackGap,
   );
 
   const positioned = positionedShelves(state.shelves, state.config, {
@@ -94,12 +124,7 @@ export function projectDrop(
     return { ok: false, reason: "NO_SHELF" };
   }
 
-  const previewRect = computeItemRectOnShelf(
-    candidate,
-    shelf,
-    shelf.items,
-    state.config,
-  );
+  const previewRect = computeItemRectOnShelf(candidate, shelf);
 
   const placement = canPlace(
     candidate,
@@ -114,6 +139,7 @@ export function projectDrop(
       reason: placement.reason,
       shelfId: candidate.shelfId,
       x: candidate.x,
+      y: candidate.y,
       previewRect,
     };
   }
@@ -122,17 +148,18 @@ export function projectDrop(
     ok: true,
     shelfId: candidate.shelfId,
     x: candidate.x,
-    stackIndex: candidate.stackIndex,
+    y: candidate.y,
     previewRect,
   };
 }
 
-/** Horizontal drag for an item already on a shelf. */
-export function projectHorizontalDrag(
+/** Drag for an item already on a shelf (preserves y unless pointer snaps). */
+export function projectItemDrag(
   state: PlanogramState,
   itemId: string,
   pointerMm: PointMm,
   viewportScale = 1,
+  forceFloat = false,
 ): DropProjection {
   for (const shelf of state.shelves) {
     const item = shelf.items.find((i) => i.id === itemId);
@@ -142,11 +169,21 @@ export function projectHorizontalDrag(
       pointerMm,
       sku: { width: item.width, height: item.height },
       facingsWide: item.facingsWide,
-      stackIndex: item.stackIndex,
       excludeItemId: itemId,
       viewportScale,
+      forceFloat,
     });
   }
 
   return { ok: false, reason: "NO_SHELF" };
+}
+
+/** @deprecated Use projectItemDrag */
+export function projectHorizontalDrag(
+  state: PlanogramState,
+  itemId: string,
+  pointerMm: PointMm,
+  viewportScale = 1,
+): DropProjection {
+  return projectItemDrag(state, itemId, pointerMm, viewportScale);
 }

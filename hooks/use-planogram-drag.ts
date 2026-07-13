@@ -3,7 +3,7 @@
 import {
   pointerPxToMm,
   projectDrop,
-  projectHorizontalDrag,
+  projectItemDrag,
   CANVAS_LABEL_PADDING_PX,
 } from "@/lib/planogram-engine";
 import type { DropProjection, PlanogramState } from "@/lib/planogram-engine";
@@ -30,7 +30,7 @@ type PaletteCommit = {
   kind: "palette";
   shelfId: string;
   x: number;
-  stackIndex: number;
+  y: number;
   sku: DragSku;
 };
 
@@ -39,7 +39,7 @@ type ItemMoveCommit = {
   itemId: string;
   shelfId: string;
   x: number;
-  stackIndex: number;
+  y: number;
 };
 
 export type DragCommit = PaletteCommit | ItemMoveCommit;
@@ -99,7 +99,7 @@ export function usePlanogramDrag({
       const scale = viewportScaleRef.current;
       const projection =
         mode === "item" && itemId
-          ? projectHorizontalDrag(stateRef.current, itemId, pointerMm, scale)
+          ? projectItemDrag(stateRef.current, itemId, pointerMm, scale)
           : projectDrop(stateRef.current, {
               pointerMm,
               sku: { width: sku.width, height: sku.height },
@@ -163,14 +163,14 @@ export function usePlanogramDrag({
               itemId,
               shelfId: next.projection.shelfId,
               x: next.projection.x,
-              stackIndex: next.projection.stackIndex,
+              y: next.projection.y,
             });
           } else {
             onCommitRef.current({
               kind: "palette",
               shelfId: next.projection.shelfId,
               x: next.projection.x,
-              stackIndex: next.projection.stackIndex,
+              y: next.projection.y,
               sku,
             });
           }

@@ -112,7 +112,7 @@ export function setItemFacingsInState(
 export function moveItemInState(
   state: PlanogramState,
   itemId: string,
-  target: { shelfId: string; x: number; stackIndex: number },
+  target: { shelfId: string; x: number; y: number },
 ): PlanogramState {
   let moving: PlanogramItem | null = null;
 
@@ -141,7 +141,7 @@ export function moveItemInState(
                 ...item,
                 shelfId: target.shelfId,
                 x: target.x,
-                stackIndex: target.stackIndex,
+                y: target.y,
               },
             ],
           }

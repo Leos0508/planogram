@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { canPlace } from "../placement";
 import { nudgeItemX } from "../nudge";
 import { projectDrop } from "../project-drop";
+import { snapYToShelfItems } from "../snap";
 import type { PlanogramState } from "../types";
 
 function baseState(
@@ -31,7 +32,7 @@ describe("canPlace", () => {
         x: 0,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 1,
       },
       "s1",
@@ -41,7 +42,7 @@ describe("canPlace", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("rejects overlapping items on same stack", () => {
+  it("rejects overlapping items in 2D", () => {
     const state = baseState([
       {
         id: "i1",
@@ -50,7 +51,7 @@ describe("canPlace", () => {
         x: 0,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 1,
       },
     ]);
@@ -63,7 +64,7 @@ describe("canPlace", () => {
         x: 50,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 1,
       },
       "s1",
@@ -71,6 +72,73 @@ describe("canPlace", () => {
       state.config,
     );
     expect(result.ok).toBe(false);
+  });
+
+  it("allows stacked items at the same x", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 100,
+        height: 200,
+        y: 0,
+        facingsWide: 1,
+      },
+    ]);
+
+    const result = canPlace(
+      {
+        id: "preview",
+        shelfId: "s1",
+        skuId: "sku2",
+        x: 0,
+        width: 100,
+        height: 150,
+        y: 210,
+        facingsWide: 1,
+      },
+      "s1",
+      state.shelves,
+      state.config,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects placement above shelf content band", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 100,
+        height: 200,
+        y: 0,
+        facingsWide: 1,
+      },
+    ]);
+
+    const result = canPlace(
+      {
+        id: "preview",
+        shelfId: "s1",
+        skuId: "sku2",
+        x: 200,
+        width: 100,
+        height: 200,
+        y: 450,
+        facingsWide: 1,
+      },
+      "s1",
+      state.shelves,
+      state.config,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("OUT_OF_BAND");
+    }
   });
 
   it("uses facings wide for collision width", () => {
@@ -82,7 +150,7 @@ describe("canPlace", () => {
         x: 0,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 1,
       },
     ]);
@@ -95,7 +163,7 @@ describe("canPlace", () => {
         x: 50,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 2,
       },
       "s1",
@@ -112,7 +180,7 @@ describe("canPlace", () => {
         x: 120,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 2,
       },
       "s1",
@@ -120,6 +188,30 @@ describe("canPlace", () => {
       state.config,
     );
     expect(allowed.ok).toBe(true);
+  });
+});
+
+describe("snapYToShelfItems", () => {
+  it("prefers item top over shelf floor when both are in range", () => {
+    const snapped = snapYToShelfItems(
+      15,
+      { x: 0, width: 100, height: 150, facingsWide: 1 },
+      [{ x: 0, width: 100, height: 20, y: 0, facingsWide: 1 }],
+      10,
+      20,
+    );
+    expect(snapped).toBe(30);
+  });
+
+  it("snaps to shelf floor when no stack target overlaps", () => {
+    const snapped = snapYToShelfItems(
+      4,
+      { x: 300, width: 100, height: 150, facingsWide: 1 },
+      [{ x: 0, width: 100, height: 200, y: 0, facingsWide: 1 }],
+      10,
+      8,
+    );
+    expect(snapped).toBe(0);
   });
 });
 
@@ -133,7 +225,7 @@ describe("nudgeItemX", () => {
         x: 0,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 1,
       },
     ]);
@@ -142,7 +234,7 @@ describe("nudgeItemX", () => {
       itemId: "i1",
       shelfId: "s1",
       x: 10,
-      stackIndex: 0,
+      y: 0,
     });
   });
 
@@ -155,7 +247,7 @@ describe("nudgeItemX", () => {
         x: 0,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 1,
       },
       {
@@ -165,7 +257,7 @@ describe("nudgeItemX", () => {
         x: 120,
         width: 100,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 1,
       },
     ]);
@@ -186,11 +278,12 @@ describe("projectDrop", () => {
     if (result.ok) {
       expect(result.shelfId).toBe("s1");
       expect(result.x).toBeGreaterThanOrEqual(0);
+      expect(result.y).toBe(0);
       expect(result.previewRect?.width).toBe(100);
     }
   });
 
-  it("rejects drop when shelf row is occupied", () => {
+  it("rejects drop when base row is occupied at the same y", () => {
     const state = baseState([
       {
         id: "i1",
@@ -199,7 +292,7 @@ describe("projectDrop", () => {
         x: 0,
         width: 200,
         height: 200,
-        stackIndex: 0,
+        y: 0,
         facingsWide: 1,
       },
     ]);
@@ -210,5 +303,30 @@ describe("projectDrop", () => {
     });
 
     expect(result.ok).toBe(false);
+  });
+
+  it("allows stacking over an occupied base row at the same x", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 200,
+        height: 200,
+        y: 0,
+        facingsWide: 1,
+      },
+    ]);
+
+    const layout = projectDrop(state, {
+      pointerMm: { x: 80, y: 315 },
+      sku: { width: 100, height: 150 },
+    });
+
+    expect(layout.ok).toBe(true);
+    if (layout.ok) {
+      expect(layout.y).toBe(210);
+    }
   });
 });

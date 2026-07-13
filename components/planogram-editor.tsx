@@ -119,7 +119,7 @@ export default function PlanogramEditor({
               shelfId: entry.item.shelfId,
               skuId: entry.item.skuId,
               x: entry.item.x,
-              stackIndex: entry.item.stackIndex,
+              y: entry.item.y,
               facingsWide: entry.item.facingsWide,
             });
             if (!response.ok) {
@@ -136,7 +136,7 @@ export default function PlanogramEditor({
                 id: response.data.id,
                 shelfId: response.data.planogramShelfId,
                 x: response.data.x,
-                stackIndex: response.data.stackIndex,
+                y: response.data.y,
                 facingsWide: response.data.facingsWide,
               });
             });
@@ -169,7 +169,7 @@ export default function PlanogramEditor({
               itemId: entry.itemId,
               shelfId: entry.to.shelfId,
               x: entry.to.x,
-              stackIndex: entry.to.stackIndex,
+              y: entry.to.y,
             });
             if (!response.ok) {
               setState((prev) =>
@@ -214,7 +214,7 @@ export default function PlanogramEditor({
                 itemId: move.itemId,
                 shelfId: move.to.shelfId,
                 x: move.to.x,
-                stackIndex: move.to.stackIndex,
+                y: move.to.y,
               });
               if (!response.ok) {
                 setState((prev) =>
@@ -301,8 +301,8 @@ export default function PlanogramEditor({
   const persistMove = useCallback(
     async (
       itemId: string,
-      from: { shelfId: string; x: number; stackIndex: number },
-      to: { shelfId: string; x: number; stackIndex: number },
+      from: { shelfId: string; x: number; y: number },
+      to: { shelfId: string; x: number; y: number },
       recordHistory: boolean,
     ) => {
       const response = await updatePlanogramItemPosition({
@@ -310,7 +310,7 @@ export default function PlanogramEditor({
         itemId,
         shelfId: to.shelfId,
         x: to.x,
-        stackIndex: to.stackIndex,
+        y: to.y,
       });
 
       if (!response.ok) {
@@ -330,13 +330,13 @@ export default function PlanogramEditor({
 
   type NudgePersistPayload = {
     itemId: string;
-    from: { shelfId: string; x: number; stackIndex: number };
-    to: { shelfId: string; x: number; stackIndex: number };
+    from: { shelfId: string; x: number; y: number };
+    to: { shelfId: string; x: number; y: number };
   };
 
   const nudgeOriginRef = useRef<{
     itemId: string;
-    from: { shelfId: string; x: number; stackIndex: number };
+    from: { shelfId: string; x: number; y: number };
   } | null>(null);
 
   const { schedule: scheduleNudgePersist, flush: flushNudgePersist } =
@@ -358,7 +358,7 @@ export default function PlanogramEditor({
           x: result.x,
           width: result.sku.width,
           height: result.sku.height,
-          stackIndex: result.stackIndex,
+          y: result.y,
           facingsWide: 1,
         };
 
@@ -369,7 +369,7 @@ export default function PlanogramEditor({
           shelfId: result.shelfId,
           skuId: result.sku.id,
           x: result.x,
-          stackIndex: result.stackIndex,
+          y: result.y,
         });
 
         if (response.ok) {
@@ -377,7 +377,7 @@ export default function PlanogramEditor({
             ...optimisticItem,
             id: response.data.id,
             x: response.data.x,
-            stackIndex: response.data.stackIndex,
+            y: response.data.y,
             shelfId: response.data.planogramShelfId,
             facingsWide: response.data.facingsWide,
           };
@@ -405,12 +405,12 @@ export default function PlanogramEditor({
       const from = {
         shelfId: found.item.shelfId,
         x: found.item.x,
-        stackIndex: found.item.stackIndex,
+        y: found.item.y,
       };
       const to = {
         shelfId: result.shelfId,
         x: result.x,
-        stackIndex: result.stackIndex,
+        y: result.y,
       };
 
       setState((prev) => moveItemInState(prev, result.itemId, to));
@@ -513,12 +513,12 @@ export default function PlanogramEditor({
           from: {
             shelfId: item.shelfId,
             x: item.x,
-            stackIndex: item.stackIndex,
+            y: item.y,
           },
           to: {
             shelfId: item.shelfId,
             x: update.x,
-            stackIndex: item.stackIndex,
+            y: item.y,
           },
         };
       });
@@ -539,7 +539,7 @@ export default function PlanogramEditor({
           itemId: move.itemId,
           shelfId: move.to.shelfId,
           x: move.to.x,
-          stackIndex: move.to.stackIndex,
+          y: move.to.y,
         });
         if (!response.ok) {
           setState((prev) =>
@@ -598,12 +598,12 @@ export default function PlanogramEditor({
       const from = {
         shelfId: found.item.shelfId,
         x: found.item.x,
-        stackIndex: found.item.stackIndex,
+        y: found.item.y,
       };
       const to = {
         shelfId: placement.shelfId,
         x: placement.x,
-        stackIndex: placement.stackIndex,
+        y: placement.y,
       };
 
       if (
@@ -640,8 +640,8 @@ export default function PlanogramEditor({
             width: drag.sku.width,
             height: drag.sku.height,
             facingsWide: draggedItem?.facingsWide ?? 1,
-            stackIndex:
-              drag.projection.ok === true ? drag.projection.stackIndex : 0,
+            y:
+              drag.projection.ok === true ? drag.projection.y : 0,
             id:
               drag.mode === "item" && drag.itemId
                 ? drag.itemId

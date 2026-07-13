@@ -53,7 +53,7 @@ model PlanogramItem {
   x                Int
   width            Int
   height           Int
-  stackIndex       Int      @default(0)
+  y                Int      @default(0)
   facingsWide      Int      @default(1)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

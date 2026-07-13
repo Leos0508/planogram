@@ -12,10 +12,10 @@ export type ShelfPlacementUpdate = {
   x: number;
 };
 
-/** Base-row items only (stackIndex === 0), sorted left to right. */
+/** Base-row items only (y === 0), sorted left to right. */
 export function baseRowItems(items: PlanogramItem[]): PlanogramItem[] {
   return items
-    .filter((item) => item.stackIndex === 0)
+    .filter((item) => item.y === 0)
     .sort((a, b) => a.x - b.x || a.id.localeCompare(b.id));
 }
 

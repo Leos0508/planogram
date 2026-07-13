@@ -2,6 +2,7 @@ import {
   computeItemRectOnShelf,
   positionedShelves,
   previewItemId,
+  shelfContentBandMm,
 } from "./layout";
 import type {
   CanPlaceResult,
@@ -29,31 +30,39 @@ export function canPlace(
   const id = previewItemId(candidate);
   const candidateWithId = { ...candidate, id, shelfId };
 
-  const positioned = positionedShelves(shelves, config, {
-    shelfId,
-    item: candidateWithId,
-  });
-  const shelf = positioned.find((s) => s.id === shelfId);
+  const shelf = shelves.find((s) => s.id === shelfId);
   if (!shelf) {
     return { ok: false, reason: "NO_SHELF" };
   }
 
-  const previewRect = computeItemRectOnShelf(
-    candidateWithId,
-    shelf,
-    shelf.items,
-    config,
-  );
+  const committedItems = shelf.items.filter((item) => item.id !== id);
+  const bandMm = shelfContentBandMm(committedItems, config);
+  if (candidateWithId.y + candidateWithId.height > bandMm) {
+    return { ok: false, reason: "OUT_OF_BAND" };
+  }
+
+  const positioned = positionedShelves(shelves, config, {
+    shelfId,
+    item: candidateWithId,
+  });
+  const positionedShelf = positioned.find((s) => s.id === shelfId);
+  if (!positionedShelf) {
+    return { ok: false, reason: "NO_SHELF" };
+  }
+
+  const previewRect = computeItemRectOnShelf(candidateWithId, positionedShelf);
 
   const collision = shelf.items.some((item) => {
-    if (item.id === id || item.stackIndex !== candidateWithId.stackIndex) {
+    if (item.id === id) {
       return false;
     }
 
-    return rectsOverlap(
-      previewRect,
-      computeItemRectOnShelf(item, shelf, shelf.items, config),
+    const itemRect = computeItemRectOnShelf(
+      item,
+      positionedShelf,
     );
+
+    return rectsOverlap(previewRect, itemRect);
   });
 
   return collision ? { ok: false, reason: "COLLISION" } : { ok: true };

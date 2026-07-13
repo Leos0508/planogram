@@ -51,7 +51,7 @@ export type PlanogramDetail = {
         x: number;
         width: number;
         height: number;
-        stackIndex: number;
+        y: number;
         facingsWide: number;
       }>;
     }>;
@@ -74,7 +74,7 @@ export async function getPlanogram(
                   x: true,
                   width: true,
                   height: true,
-                  stackIndex: true,
+                  y: true,
                   facingsWide: true,
                 },
               },

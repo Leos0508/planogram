@@ -12,7 +12,7 @@ export type PlanogramItemRecord = {
   x: number;
   width: number;
   height: number;
-  stackIndex: number;
+  y: number;
   facingsWide: number;
 };
 
@@ -28,7 +28,7 @@ export async function placePlanogramItem(input: {
   shelfId: string;
   skuId: string;
   x: number;
-  stackIndex: number;
+  y: number;
   facingsWide?: number;
 }): Promise<ActionResult<PlanogramItemRecord>> {
   try {
@@ -55,7 +55,7 @@ export async function placePlanogramItem(input: {
         x: Math.round(input.x),
         width: sku.width,
         height: sku.height,
-        stackIndex: input.stackIndex,
+        y: input.y,
         facingsWide: Math.min(99, Math.max(1, Math.floor(input.facingsWide ?? 1))),
       },
     });
@@ -97,7 +97,7 @@ export async function updatePlanogramItemPosition(input: {
   itemId: string;
   shelfId: string;
   x: number;
-  stackIndex: number;
+  y: number;
 }): Promise<ActionResult<PlanogramItemRecord>> {
   try {
     const item = await prisma.planogramItem.findUnique({
@@ -121,7 +121,7 @@ export async function updatePlanogramItemPosition(input: {
       data: {
         planogramShelfId: input.shelfId,
         x: Math.round(input.x),
-        stackIndex: input.stackIndex,
+        y: input.y,
       },
     });
 
