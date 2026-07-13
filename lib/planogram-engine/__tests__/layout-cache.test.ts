@@ -19,7 +19,7 @@ function baseState(): PlanogramState {
             x: 0,
             width: 100,
             height: 200,
-            stackIndex: 0,
+            y: 0,
             facingsWide: 1,
           },
         ],

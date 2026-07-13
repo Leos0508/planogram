@@ -33,7 +33,7 @@ describe("computePlanogramLayout", () => {
           x: 100,
           width: 300,
           height: 200,
-          stackIndex: 0,
+          y: 0,
           facingsWide: 1,
         },
       ]),
@@ -48,7 +48,7 @@ describe("computePlanogramLayout", () => {
       x: 250,
       width: 200,
       height: 150,
-      stackIndex: 0,
+      y: 0,
       facingsWide: 1,
     });
     expect(layout.contentWidthMm).toBe(450);
@@ -64,7 +64,7 @@ describe("computePlanogramLayout", () => {
           x: 0,
           width: 100,
           height: 200,
-          stackIndex: 0,
+          y: 0,
           facingsWide: 3,
         },
       ]),
@@ -110,7 +110,7 @@ describe("computeShelfPositions", () => {
               x: 0,
               width: 100,
               height: 400,
-              stackIndex: 0,
+              y: 0,
               facingsWide: 1,
             },
             {
@@ -120,7 +120,7 @@ describe("computeShelfPositions", () => {
               x: 0,
               width: 100,
               height: 300,
-              stackIndex: 1,
+              y: 410,
               facingsWide: 1,
             },
           ],
@@ -129,6 +129,44 @@ describe("computeShelfPositions", () => {
       { topClearance: 100, stackGap: 10 },
     );
 
-    expect(positioned[0].yMm).toBe(820);
+    expect(positioned[0].yMm).toBe(910);
+  });
+
+  it("reserves topClearance above the tallest stacked item", () => {
+    const config = { topClearance: 10, stackGap: 10 };
+    const items = [
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 100,
+        height: 400,
+        y: 0,
+        facingsWide: 1,
+      },
+      {
+        id: "i2",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 100,
+        height: 300,
+        y: 410,
+        facingsWide: 1,
+      },
+    ];
+    const state = {
+      id: "p1",
+      config,
+      shelves: [{ id: "s1", index: 0, yMm: 0, items }],
+    } satisfies PlanogramState;
+
+    const layout = computePlanogramLayout(state);
+    const shelf = layout.shelves[0];
+    const tallest = layout.items.find((item) => item.itemId === "i2")!;
+
+    expect(shelf.contentHeightMm).toBe(720);
+    expect(tallest.rect.y).toBe(shelf.rowTopMm + config.topClearance * 2);
   });
 });

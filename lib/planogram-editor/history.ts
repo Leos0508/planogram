@@ -6,16 +6,16 @@ export type PlanogramHistoryEntry =
   | {
       type: "move";
       itemId: string;
-      from: { shelfId: string; x: number; stackIndex: number };
-      to: { shelfId: string; x: number; stackIndex: number };
+      from: { shelfId: string; x: number; y: number };
+      to: { shelfId: string; x: number; y: number };
     }
   | { type: "facings"; itemId: string; from: number; to: number }
   | {
       type: "batchMove";
       moves: Array<{
         itemId: string;
-        from: { shelfId: string; x: number; stackIndex: number };
-        to: { shelfId: string; x: number; stackIndex: number };
+        from: { shelfId: string; x: number; y: number };
+        to: { shelfId: string; x: number; y: number };
       }>;
     };
 

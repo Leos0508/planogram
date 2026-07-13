@@ -21,7 +21,7 @@ function layoutCacheKey(
         x: item.x,
         width: item.width,
         height: item.height,
-        stackIndex: item.stackIndex,
+        y: item.y,
         facingsWide: item.facingsWide,
       })),
     })),

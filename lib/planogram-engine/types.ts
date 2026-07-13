@@ -20,7 +20,8 @@ export type PlanogramItem = {
   x: number;
   width: number;
   height: number;
-  stackIndex: number;
+  /** Bottom edge offset above shelf line (mm). 0 = resting on shelf. */
+  y: number;
   /** Number of unit widths placed side-by-side on the shelf. */
   facingsWide: number;
 };
@@ -50,7 +51,7 @@ export type ItemRect = {
   itemId: string;
   shelfId: string;
   skuId: string;
-  stackIndex: number;
+  y: number;
   rect: RectMm;
   valid: boolean;
 };
@@ -75,14 +76,14 @@ export type PlanogramLayout = {
   contentWidthMm: number;
 };
 
-export type DropReason = "NO_SHELF" | "COLLISION";
+export type DropReason = "NO_SHELF" | "COLLISION" | "OUT_OF_BAND";
 
 export type DropProjection =
   | {
       ok: true;
       shelfId: string;
       x: number;
-      stackIndex: number;
+      y: number;
       previewRect: RectMm;
     }
   | {
@@ -90,6 +91,7 @@ export type DropProjection =
       reason: DropReason;
       shelfId?: string;
       x?: number;
+      y?: number;
       previewRect?: RectMm;
     };
 

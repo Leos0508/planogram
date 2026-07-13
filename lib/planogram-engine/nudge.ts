@@ -5,7 +5,7 @@ export type ItemPlacement = {
   itemId: string;
   shelfId: string;
   x: number;
-  stackIndex: number;
+  y: number;
 };
 
 /** Try to nudge an item horizontally by deltaMm. Returns null if blocked. */
@@ -39,7 +39,7 @@ export function nudgeItemX(
       itemId: item.id,
       shelfId: shelf.id,
       x: nextX,
-      stackIndex: item.stackIndex,
+      y: item.y,
     };
   }
 
