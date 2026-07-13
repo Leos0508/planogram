@@ -177,6 +177,7 @@ export type PlanogramShelfRecord = {
   id: string;
   planogramId: string;
   index: number;
+  minContentHeightMm: number;
 };
 
 const DEFAULT_SHELF_COUNT = 3;
@@ -325,6 +326,35 @@ export async function addPlanogramShelf(input: {
   } catch (error) {
     console.error("[addPlanogramShelf]", error);
     return { ok: false, message: "Failed to add shelf" };
+  }
+}
+
+export async function updatePlanogramShelfMinHeight(input: {
+  planogramId: string;
+  shelfId: string;
+  minContentHeightMm: number;
+}): Promise<ActionResult<PlanogramShelfRecord>> {
+  const minContentHeightMm = Math.round(input.minContentHeightMm);
+  if (minContentHeightMm < 1) {
+    return { ok: false, message: "Shelf height must be at least 1 mm" };
+  }
+
+  try {
+    const shelf = await prisma.planogramShelf.findFirst({
+      where: { id: input.shelfId, planogramId: input.planogramId },
+    });
+    if (!shelf) return { ok: false, message: "Shelf not found" };
+
+    const updated = await prisma.planogramShelf.update({
+      where: { id: input.shelfId },
+      data: { minContentHeightMm },
+    });
+
+    revalidatePath(`/planograms/${input.planogramId}`);
+    return { ok: true, data: updated };
+  } catch (error) {
+    console.error("[updatePlanogramShelfMinHeight]", error);
+    return { ok: false, message: "Failed to update shelf height" };
   }
 }
 

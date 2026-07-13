@@ -45,6 +45,7 @@ export type PlanogramDetail = {
     shelves: Array<{
       id: string;
       index: number;
+      minContentHeightMm: number;
       items: Array<{
         id: string;
         skuId: string;
@@ -101,6 +102,7 @@ export async function getPlanogram(
           shelves: planogram.shelves.map((shelf) => ({
             id: shelf.id,
             index: shelf.index,
+            minContentHeightMm: shelf.minContentHeightMm,
             items: shelf.planogramShelfItems,
           })),
         },

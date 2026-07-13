@@ -39,6 +39,7 @@ model PlanogramShelf {
   id          String   @id @default(uuid())
   planogramId String
   index       Int
+  minContentHeightMm Int @default(500)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

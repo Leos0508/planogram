@@ -15,6 +15,7 @@ function baseState(
       {
         id: "s1",
         index: 0,
+        minContentHeightMm: 500,
         yMm: 0,
         items,
       },
@@ -139,6 +140,39 @@ describe("canPlace", () => {
     if (!result.ok) {
       expect(result.reason).toBe("OUT_OF_BAND");
     }
+  });
+
+  it("allows taller stacks when minContentHeightMm is increased", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 100,
+        height: 200,
+        y: 0,
+        facingsWide: 1,
+      },
+    ]);
+    state.shelves[0].minContentHeightMm = 800;
+
+    const result = canPlace(
+      {
+        id: "preview",
+        shelfId: "s1",
+        skuId: "sku2",
+        x: 200,
+        width: 100,
+        height: 200,
+        y: 450,
+        facingsWide: 1,
+      },
+      "s1",
+      state.shelves,
+      state.config,
+    );
+    expect(result.ok).toBe(true);
   });
 
   it("uses facings wide for collision width", () => {

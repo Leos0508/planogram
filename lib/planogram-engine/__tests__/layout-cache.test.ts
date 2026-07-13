@@ -10,6 +10,7 @@ function baseState(): PlanogramState {
       {
         id: "s1",
         index: 0,
+        minContentHeightMm: 500,
         yMm: 0,
         items: [
           {

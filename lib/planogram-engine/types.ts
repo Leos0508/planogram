@@ -29,6 +29,8 @@ export type PlanogramItem = {
 export type PlanogramShelf = {
   id: string;
   index: number;
+  /** User-set minimum item-area height (mm). */
+  minContentHeightMm: number;
   /** Shelf line Y in mm — derived from stacked layout. */
   yMm: number;
   items: PlanogramItem[];
