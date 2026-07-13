@@ -70,6 +70,10 @@ export default function PlanogramItemInspector({
           <dd className="font-mono">{item.x} mm</dd>
         </div>
         <div className="flex justify-between gap-2">
+          <dt className="text-muted-foreground">Y</dt>
+          <dd className="font-mono">{item.y} mm</dd>
+        </div>
+        <div className="flex justify-between gap-2">
           <dt className="text-muted-foreground">Unit</dt>
           <dd className="font-mono">
             {item.width} × {item.height} mm
@@ -130,7 +134,7 @@ export default function PlanogramItemInspector({
       ) : null}
 
       <p className="mt-2 text-[10px] text-muted-foreground">
-        3 / Shift+3 facings · Arrow nudge · Delete removes
+        Alt float · 3 / Shift+3 facings · Arrow nudge · Delete removes
       </p>
     </div>
   );

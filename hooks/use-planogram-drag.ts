@@ -23,6 +23,8 @@ export type PlanogramDragState = {
   clientX: number;
   clientY: number;
   pointerPx: { x: number; y: number };
+  /** Alt held — Y snap disabled (free float within band). */
+  forceFloat: boolean;
   projection: DropProjection;
 };
 
@@ -66,6 +68,7 @@ export function usePlanogramDrag({
   const onDropRejectedRef = useRef(onDropRejected);
   const clientToCanvasLocalRef = useRef(clientToCanvasLocal);
   const viewportScaleRef = useRef(viewportScale);
+  const endDragSessionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
@@ -94,6 +97,7 @@ export function usePlanogramDrag({
       sku: DragSku,
       mode: "palette" | "item",
       itemId?: string,
+      forceFloat = false,
     ): PlanogramDragState | null => {
       const pointerPx = clientToCanvasLocalRef.current?.(clientX, clientY);
       if (!pointerPx) return null;
@@ -106,11 +110,18 @@ export function usePlanogramDrag({
       const scale = viewportScaleRef.current;
       const projection =
         mode === "item" && itemId
-          ? projectItemDrag(stateRef.current, itemId, pointerMm, scale)
+          ? projectItemDrag(
+              stateRef.current,
+              itemId,
+              pointerMm,
+              scale,
+              forceFloat,
+            )
           : projectDrop(stateRef.current, {
               pointerMm,
               sku: { width: sku.width, height: sku.height },
               viewportScale: scale,
+              forceFloat,
             });
 
       return {
@@ -120,6 +131,7 @@ export function usePlanogramDrag({
         clientX,
         clientY,
         pointerPx,
+        forceFloat,
         projection,
       };
     },
@@ -139,21 +151,53 @@ export function usePlanogramDrag({
       event.stopPropagation();
       document.body.style.cursor = "none";
 
-      const onPointerMove = (moveEvent: PointerEvent) => {
+      let lastClientX = event.clientX;
+      let lastClientY = event.clientY;
+
+      const projectFromPointer = (
+        clientX: number,
+        clientY: number,
+        forceFloat: boolean,
+      ) => {
         const next = projectAt(
-          moveEvent.clientX,
-          moveEvent.clientY,
+          clientX,
+          clientY,
           sku,
           mode,
           itemId,
+          forceFloat,
         );
         if (next) setDrag(next);
       };
 
-      const onPointerUp = (upEvent: PointerEvent) => {
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        lastClientX = moveEvent.clientX;
+        lastClientY = moveEvent.clientY;
+        projectFromPointer(
+          moveEvent.clientX,
+          moveEvent.clientY,
+          moveEvent.altKey,
+        );
+      };
+
+      const onAltChange = (keyEvent: KeyboardEvent) => {
+        if (keyEvent.key !== "Alt") return;
+        projectFromPointer(lastClientX, lastClientY, keyEvent.type === "keydown");
+      };
+
+      const endDragSession = () => {
         window.removeEventListener("pointermove", onPointerMove);
         window.removeEventListener("pointerup", onPointerUp);
+        window.removeEventListener("keydown", onAltChange);
+        window.removeEventListener("keyup", onAltChange);
         document.body.style.cursor = "";
+        endDragSessionRef.current = null;
+      };
+
+      endDragSessionRef.current = endDragSession;
+
+      const onPointerUp = (upEvent: PointerEvent) => {
+        endDragSession();
 
         const next = projectAt(
           upEvent.clientX,
@@ -161,6 +205,7 @@ export function usePlanogramDrag({
           sku,
           mode,
           itemId,
+          upEvent.altKey,
         );
 
         if (next?.projection.ok) {
@@ -189,8 +234,17 @@ export function usePlanogramDrag({
 
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("keydown", onAltChange);
+      window.addEventListener("keyup", onAltChange);
 
-      const next = projectAt(event.clientX, event.clientY, sku, mode, itemId);
+      const next = projectAt(
+        event.clientX,
+        event.clientY,
+        sku,
+        mode,
+        itemId,
+        event.altKey,
+      );
       if (next) setDrag(next);
     },
     [projectAt],
@@ -230,8 +284,8 @@ export function usePlanogramDrag({
   );
 
   const cancelDrag = useCallback(() => {
+    endDragSessionRef.current?.();
     setDrag(null);
-    document.body.style.cursor = "";
   }, []);
 
   return { drag, startDrag, startItemDrag, cancelDrag };

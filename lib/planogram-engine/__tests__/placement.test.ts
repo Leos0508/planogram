@@ -363,4 +363,25 @@ describe("projectDrop", () => {
       expect(layout.y).toBe(210);
     }
   });
+
+  it("skips Y snap when forceFloat is set", () => {
+    const state = baseState();
+
+    const snapped = projectDrop(state, {
+      pointerMm: { x: 50, y: 500 },
+      sku: { width: 100, height: 150 },
+    });
+    const floating = projectDrop(state, {
+      pointerMm: { x: 50, y: 500 },
+      sku: { width: 100, height: 150 },
+      forceFloat: true,
+    });
+
+    expect(snapped.ok).toBe(true);
+    expect(floating.ok).toBe(true);
+    if (snapped.ok && floating.ok) {
+      expect(snapped.y).toBe(0);
+      expect(floating.y).toBe(25);
+    }
+  });
 });

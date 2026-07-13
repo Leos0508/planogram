@@ -8,6 +8,8 @@ export const EDITOR_COMMANDS: EditorCommand[] = [
   { action: "Zoom", keys: "Scroll wheel" },
   { action: "Place SKU", keys: "Drag from tray" },
   { action: "Move item", keys: "Drag item" },
+  { action: "Float (no Y snap)", keys: "Alt while dragging" },
+  { action: "Resize shelf height", keys: "Drag shelf top border" },
   { action: "Increase facings", keys: "3" },
   { action: "Decrease facings", keys: "Shift + 3" },
   { action: "Nudge item", keys: "← →" },
