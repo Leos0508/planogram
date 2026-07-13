@@ -1,0 +1,43 @@
+---
+description: Naming and format conventions for Linear issues, branches, commits, and PRs
+alwaysApply: true
+---
+
+# Delivery conventions
+
+Full guide: [Delivery conventions (issues, branches, commits, PRs)](https://linear.app/planogram/document/delivery-conventions-issues-branches-commits-prs-001627bba3a5).
+Repo copy: `docs/LINEAR_ISSUE_TEMPLATE.md`.
+
+Apply these formats whenever creating issues, branches, commits, or pull requests.
+
+## Quick reference
+
+| Action | Pattern | Example |
+|--------|---------|---------|
+| Issue title | Imperative phrase, ≤72 chars | `Manual shelf height resize (drag top border)` |
+| Branch | `pla-<N>-<short-kebab-slug>` | `pla-15-manual-shelf-height-resize` |
+| Commit | `<Summary>. (PLA-N).` | `Add shelf top-border drag handle. (PLA-15).` |
+| PR title | `<Summary> (PLA-N).` | `Add shelf top-border drag handle (PLA-15).` |
+
+## Linear issues
+
+- Body sections: **Goal** → **Acceptance criteria** → **Out of scope** → **Links**
+- Labels (one primary): `feature` | `bug` | `chore` | `debt`
+- Status: Backlog → Todo → In Progress → In Review → Done
+- PR-sized; create issue before planned work
+
+## Branches
+
+- Format: `pla-<N>-<short-kebab-slug>` from issue title (lowercase, hyphens)
+- One branch per issue; never commit to `main`
+
+## Commits
+
+- `<Imperative summary>. (PLA-N).` — present tense, ≤72 chars before `(PLA-N)`
+- Prefer a `chore` issue + `(PLA-N)` over omitting the reference
+
+## Pull requests
+
+- Title matches commit/PR pattern with `(PLA-N).` at end
+- Body: `## Summary` + `## Test plan` + `PLA-N` line for GitHub↔Linear automation
+- Target `main`; issue → In Review when PR opens, Done when merged

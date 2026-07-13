@@ -21,6 +21,7 @@ This rule applies to **this repo only**. Prefer small, reviewable changes.
 - Coding → **In Progress**; PR open → **In Review**; merged to `main` → **Done**.
 - Issues need enough context: goal, acceptance criteria, out of scope, links.
 - Use the Linear project doc **Issue template**, or `docs/LINEAR_ISSUE_TEMPLATE.md`.
+- Follow **Delivery conventions** (Linear project doc) for issue titles, branch names, commits, and PRs — see `.cursor/rules/delivery-conventions.mdc`.
 - Labels: feature / bug / chore / debt when useful.
 - Create a Linear issue before starting any new planned work.
 
@@ -32,8 +33,9 @@ This rule applies to **this repo only**. Prefer small, reviewable changes.
 
 ## GitHub (`main` is protected)
 
-- Never commit directly to `main`. Use a feature branch (prefer `pla-N-short-slug`).
-- Open a PR into `main` when work is ready (`gh pr create`). Include Summary, Test plan, and `PLA-xxx`.
+- Never commit directly to `main`. Use a feature branch: `pla-<N>-<short-kebab-slug>` (see delivery conventions).
+- Open a PR into `main` when work is ready (`gh pr create`). Title: `<Summary> (PLA-N).`; body: Summary, Test plan, and `PLA-N`.
+- Commits: `<Summary>. (PLA-N).` — imperative, present tense.
 - No force-push to `main`; do not bypass branch protection.
 
 ## Design system
