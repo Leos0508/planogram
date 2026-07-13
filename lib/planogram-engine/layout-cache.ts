@@ -15,6 +15,7 @@ function layoutCacheKey(
     shelves: state.shelves.map((shelf) => ({
       id: shelf.id,
       index: shelf.index,
+      minContentHeightMm: shelf.minContentHeightMm,
       items: shelf.items.map((item) => ({
         id: item.id,
         shelfId: item.shelfId,

@@ -6,7 +6,7 @@ import {
   projectItemDrag,
   CANVAS_LABEL_PADDING_PX,
 } from "@/lib/planogram-engine";
-import type { DropProjection, PlanogramState } from "@/lib/planogram-engine";
+import type { DropProjection, DropReason, PlanogramState } from "@/lib/planogram-engine";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type DragSku = {
@@ -49,6 +49,7 @@ export function usePlanogramDrag({
   state,
   viewportScale,
   onCommit,
+  onDropRejected,
 }: {
   clientToCanvasLocal: (clientX: number, clientY: number) => {
     x: number;
@@ -57,10 +58,12 @@ export function usePlanogramDrag({
   state: PlanogramState;
   viewportScale: number;
   onCommit: (result: DragCommit) => void;
+  onDropRejected?: (reason: DropReason) => void;
 }) {
   const [drag, setDrag] = useState<PlanogramDragState | null>(null);
   const stateRef = useRef(state);
   const onCommitRef = useRef(onCommit);
+  const onDropRejectedRef = useRef(onDropRejected);
   const clientToCanvasLocalRef = useRef(clientToCanvasLocal);
   const viewportScaleRef = useRef(viewportScale);
 
@@ -71,6 +74,10 @@ export function usePlanogramDrag({
   useEffect(() => {
     onCommitRef.current = onCommit;
   }, [onCommit]);
+
+  useEffect(() => {
+    onDropRejectedRef.current = onDropRejected;
+  }, [onDropRejected]);
 
   useEffect(() => {
     clientToCanvasLocalRef.current = clientToCanvasLocal;
@@ -174,6 +181,8 @@ export function usePlanogramDrag({
               sku,
             });
           }
+        } else if (next && !next.projection.ok) {
+          onDropRejectedRef.current?.(next.projection.reason);
         }
         setDrag(null);
       };

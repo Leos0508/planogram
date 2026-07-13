@@ -11,6 +11,7 @@ import {
   usePlanogramDrag,
   type DragCommit,
 } from "@/hooks/use-planogram-drag";
+import { useShelfResize } from "@/hooks/use-shelf-resize";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import {
   addItemToState,
@@ -18,6 +19,7 @@ import {
   removeItemFromState,
   setItemFacingsInState,
   setItemsPositionsInState,
+  setShelfMinContentHeightInState,
   usePlanogramHistory,
   type PlanogramHistoryEntry,
 } from "@/hooks/use-planogram-history";
@@ -32,12 +34,13 @@ import {
   validateShelfPlacements,
   type ShelfLayoutMode,
 } from "@/lib/planogram-engine";
-import type { PlanogramItem } from "@/lib/planogram-engine";
+import type { DropReason, PlanogramItem } from "@/lib/planogram-engine";
 import {
   placePlanogramItem,
   removePlanogramItem,
   updatePlanogramItemFacings,
   updatePlanogramItemPosition,
+  updatePlanogramShelfMinHeight,
 } from "@/lib/planograms/actions";
 import type { PlanogramDetail } from "@/lib/planograms/queries";
 import { planogramStructureKey } from "@/lib/planogram-editor/sync-key";
@@ -465,12 +468,64 @@ export default function PlanogramEditor({
     fitToView,
   } = useCanvasViewport(canvasRef);
 
+  const onDropRejected = useCallback(
+    (reason: DropReason) => {
+      if (reason === "OUT_OF_BAND") {
+        toast.error("Resize shelf first");
+      }
+    },
+    [toast],
+  );
+
+  const persistShelfResize = useCallback(
+    async (shelfId: string, minContentHeightMm: number) => {
+      const shelf = stateRef.current.shelves.find((row) => row.id === shelfId);
+      if (!shelf || shelf.minContentHeightMm === minContentHeightMm) return;
+
+      const from = shelf.minContentHeightMm;
+      setState((prev) =>
+        setShelfMinContentHeightInState(prev, shelfId, minContentHeightMm),
+      );
+
+      const response = await updatePlanogramShelfMinHeight({
+        planogramId: planogram.id,
+        shelfId,
+        minContentHeightMm,
+      });
+
+      if (!response.ok) {
+        setState((prev) =>
+          setShelfMinContentHeightInState(prev, shelfId, from),
+        );
+        console.error("[updatePlanogramShelfMinHeight]", response.message);
+        toast.error(response.message);
+      }
+    },
+    [planogram.id, toast],
+  );
+
   const { drag, startDrag, startItemDrag, cancelDrag } = usePlanogramDrag({
     clientToCanvasLocal,
     state,
     viewportScale: transform.scale,
     onCommit,
+    onDropRejected,
   });
+
+  const { resize: shelfResize, startResize: startShelfResize } = useShelfResize({
+    clientToCanvasLocal,
+    state,
+    onCommit: persistShelfResize,
+  });
+
+  const displayState = useMemo(() => {
+    if (!shelfResize) return state;
+    return setShelfMinContentHeightInState(
+      state,
+      shelfResize.shelfId,
+      shelfResize.minContentHeightMm,
+    );
+  }, [state, shelfResize]);
 
   const applyShelfLayout = useCallback(
     async (mode: ShelfLayoutMode) => {
@@ -626,7 +681,7 @@ export default function PlanogramEditor({
   const layout = useMemo(() => {
     const draggedItem =
       drag?.mode === "item" && drag.itemId
-        ? state.shelves
+        ? displayState.shelves
             .flatMap((shelf) => shelf.items)
             .find((item) => item.id === drag.itemId)
         : undefined;
@@ -649,8 +704,8 @@ export default function PlanogramEditor({
           }
         : undefined;
 
-    return computePlanogramLayoutCached(state, previewItem);
-  }, [state, drag]);
+    return computePlanogramLayoutCached(displayState, previewItem);
+  }, [displayState, drag]);
 
   const activeShelfId =
     drag?.projection.shelfId && drag.projection.ok
@@ -778,12 +833,14 @@ export default function PlanogramEditor({
         <PlanogramCanvas
           canvasRef={canvasRef}
           layout={layout}
-          state={state}
+          state={displayState}
           skuById={skuById}
           drag={drag}
+          shelfResize={shelfResize}
           selectedItemId={selectedItemId}
           activeShelfId={activeShelfId}
           onItemPointerDown={handleItemPointerDown}
+          onShelfResizePointerDown={startShelfResize}
           onCanvasPointerDown={() => setSelectedItemId(null)}
         />
       </PlanogramViewport>

@@ -36,7 +36,11 @@ export function canPlace(
   }
 
   const committedItems = shelf.items.filter((item) => item.id !== id);
-  const bandMm = shelfContentBandMm(committedItems, config);
+  const bandMm = shelfContentBandMm(
+    committedItems,
+    config,
+    shelf.minContentHeightMm,
+  );
   if (candidateWithId.y + candidateWithId.height > bandMm) {
     return { ok: false, reason: "OUT_OF_BAND" };
   }

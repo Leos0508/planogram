@@ -2,6 +2,7 @@
 
 import { mmToPx, CANVAS_LABEL_PADDING_PX, itemFacingsWide } from "@/lib/planogram-engine";
 import type { PlanogramDragState } from "@/hooks/use-planogram-drag";
+import type { ShelfResizeState } from "@/hooks/use-shelf-resize";
 import type { PlanogramLayout, PlanogramState } from "@/lib/planogram-engine";
 import type { Sku } from "@/lib/skus/queries";
 import { useMemo } from "react";
@@ -20,9 +21,11 @@ export default function PlanogramCanvas({
   state,
   skuById,
   drag,
+  shelfResize,
   selectedItemId,
   activeShelfId,
   onItemPointerDown,
+  onShelfResizePointerDown,
   onCanvasPointerDown,
 }: {
   canvasRef: React.RefObject<HTMLDivElement | null>;
@@ -30,6 +33,7 @@ export default function PlanogramCanvas({
   state: PlanogramState;
   skuById: Map<string, Sku>;
   drag: PlanogramDragState | null;
+  shelfResize: ShelfResizeState | null;
   selectedItemId: string | null;
   activeShelfId?: string | null;
   onItemPointerDown: (
@@ -40,6 +44,10 @@ export default function PlanogramCanvas({
       width: number;
       height: number;
     },
+    event: React.PointerEvent,
+  ) => void;
+  onShelfResizePointerDown: (
+    shelfId: string,
     event: React.PointerEvent,
   ) => void;
   onCanvasPointerDown: () => void;
@@ -103,6 +111,7 @@ export default function PlanogramCanvas({
           const contentTopPx = rowTopPx + clearancePx;
           const contentHeightPx = mmToPx(shelf.contentHeightMm);
           const isActive = activeShelfId === shelf.shelfId;
+          const isResizing = shelfResize?.shelfId === shelf.shelfId;
 
           return (
             <g key={shelf.shelfId}>
@@ -121,6 +130,28 @@ export default function PlanogramCanvas({
                 className={isActive ? "fill-[var(--canvas-shelf-active)]" : "fill-muted/20"}
                 stroke={isActive ? "var(--canvas-valid)" : undefined}
                 strokeWidth={isActive ? 2 : 0}
+              />
+              <rect
+                x={0}
+                y={contentTopPx - 4}
+                width={shelfWidthPx}
+                height={8}
+                className="cursor-ns-resize fill-transparent"
+                onPointerDown={(event) =>
+                  onShelfResizePointerDown(shelf.shelfId, event)
+                }
+              />
+              <line
+                x1={0}
+                y1={contentTopPx}
+                x2={shelfWidthPx}
+                y2={contentTopPx}
+                className={
+                  isResizing
+                    ? "stroke-[var(--canvas-valid)]"
+                    : "stroke-border/60"
+                }
+                strokeWidth={isResizing ? 2 : 1}
               />
               <line
                 x1={0}
