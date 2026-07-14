@@ -12,11 +12,15 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import { createPlanogram, deletePlanogram } from "@/lib/planograms/actions";
+import { filterPlanogramsByName } from "@/lib/planograms/filter";
 import type { PlanogramListItem } from "@/lib/planograms/queries";
-import { LayoutGridIcon, PlusIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { LayoutGridIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+
+const SEARCH_DEBOUNCE_MS = 250;
 
 export default function PlanogramsPageClient({
   planograms,
@@ -24,10 +28,55 @@ export default function PlanogramsPageClient({
   planograms: PlanogramListItem[];
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+
   const [pending, startTransition] = useTransition();
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState(urlQuery);
+  const [appliedQuery, setAppliedQuery] = useState(urlQuery);
+
+  useEffect(() => {
+    setSearchInput(urlQuery);
+    setAppliedQuery(urlQuery);
+  }, [urlQuery]);
+
+  const { schedule: scheduleQueryUpdate } = useDebouncedCallback(
+    (nextQuery: string) => {
+      setAppliedQuery(nextQuery);
+
+      const params = new URLSearchParams(searchParams.toString());
+      const trimmed = nextQuery.trim();
+      if (trimmed) {
+        params.set("q", trimmed);
+      } else {
+        params.delete("q");
+      }
+
+      const queryString = params.toString();
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+        scroll: false,
+      });
+    },
+    SEARCH_DEBOUNCE_MS,
+  );
+
+  const filtered = filterPlanogramsByName(planograms, appliedQuery);
+  const hasActiveSearch = appliedQuery.trim().length > 0;
+
+  const clearSearch = () => {
+    setSearchInput("");
+    setAppliedQuery("");
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("q");
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+      scroll: false,
+    });
+  };
 
   const handleCreate = (event: React.FormEvent) => {
     event.preventDefault();
@@ -78,6 +127,39 @@ export default function PlanogramsPageClient({
           <PlusIcon className="size-4" />
           New
         </Button>
+      }
+      search={
+        <div className="relative">
+          <SearchIcon
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            id="planogram-search"
+            type="text"
+            value={searchInput}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSearchInput(value);
+              scheduleQueryUpdate(value);
+            }}
+            placeholder="Search by name"
+            className="pr-9 pl-9"
+            aria-label="Search planograms by name"
+          />
+          {searchInput ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="absolute top-1/2 right-1 -translate-y-1/2"
+              title="Clear search"
+              onClick={clearSearch}
+            >
+              <XIcon className="size-4" />
+            </Button>
+          ) : null}
+        </div>
       }
       banner={
         showCreate ? (
@@ -132,9 +214,25 @@ export default function PlanogramsPageClient({
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
+      ) : filtered.length === 0 && hasActiveSearch ? (
+        <Empty className="border border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <SearchIcon />
+            </EmptyMedia>
+            <EmptyTitle>No results</EmptyTitle>
+            <EmptyDescription>
+              No planograms match “{appliedQuery.trim()}”. Try a different
+              name or clear the search.
+            </EmptyDescription>
+          </EmptyHeader>
+          <Button type="button" variant="outline" size="sm" onClick={clearSearch}>
+            Clear search
+          </Button>
+        </Empty>
       ) : (
         <ul className="grid w-full list-none grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {planograms.map((planogram) => (
+          {filtered.map((planogram) => (
             <li key={planogram.id}>
               <PlanogramCard
                 planogram={planogram}
