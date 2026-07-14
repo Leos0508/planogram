@@ -131,9 +131,19 @@ export default function PlanogramCanvas({
                 stroke={isActive ? "var(--canvas-valid)" : undefined}
                 strokeWidth={isActive ? 2 : 0}
               />
+              {/* Clearance / content divider (not the resize handle). */}
+              <line
+                x1={0}
+                y1={contentTopPx}
+                x2={shelfWidthPx}
+                y2={contentTopPx}
+                className="stroke-border/60"
+                strokeWidth={1}
+              />
+              {/* Resize handle on shelf row top (outer top). */}
               <rect
                 x={0}
-                y={contentTopPx - 4}
+                y={rowTopPx - 4}
                 width={shelfWidthPx}
                 height={8}
                 className="cursor-ns-resize fill-transparent"
@@ -143,13 +153,13 @@ export default function PlanogramCanvas({
               />
               <line
                 x1={0}
-                y1={contentTopPx}
+                y1={rowTopPx}
                 x2={shelfWidthPx}
-                y2={contentTopPx}
+                y2={rowTopPx}
                 className={
                   isResizing
                     ? "stroke-[var(--canvas-valid)]"
-                    : "stroke-border/60"
+                    : "stroke-border/40"
                 }
                 strokeWidth={isResizing ? 2 : 1}
               />

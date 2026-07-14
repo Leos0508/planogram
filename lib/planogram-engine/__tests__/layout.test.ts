@@ -133,10 +133,11 @@ describe("computeShelfPositions", () => {
       { topClearance: 100, stackGap: 10 },
     );
 
-    expect(positioned[0].yMm).toBe(910);
+    // topClearance (100) + maxReach (710) — clearance reserved once above content
+    expect(positioned[0].yMm).toBe(810);
   });
 
-  it("reserves topClearance above the tallest stacked item", () => {
+  it("reserves topClearance once above the content band", () => {
     const config = { topClearance: 10, stackGap: 10 };
     const items = [
       {
@@ -170,8 +171,9 @@ describe("computeShelfPositions", () => {
     const shelf = layout.shelves[0];
     const tallest = layout.items.find((item) => item.itemId === "i2")!;
 
-    expect(shelf.contentHeightMm).toBe(720);
-    expect(tallest.rect.y).toBe(shelf.rowTopMm + config.topClearance * 2);
+    // Content height = maxReach (710); clearance is the band above content only
+    expect(shelf.contentHeightMm).toBe(710);
+    expect(tallest.rect.y).toBe(shelf.rowTopMm + config.topClearance);
   });
 
   it("uses minContentHeightMm when larger than item reach", () => {

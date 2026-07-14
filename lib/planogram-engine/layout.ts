@@ -48,10 +48,14 @@ export function withCandidateOnShelf(
   });
 }
 
-/** Item-area height including top padding above the tallest item. */
+/**
+ * Item-area (content band) height above the shelf line.
+ * `topClearance` is reserved once as the separate band above this area — not
+ * subtracted again from placeable height.
+ */
 export function itemAreaHeightMm(
   items: PlanogramItem[],
-  config: PlanogramConfig,
+  _config: PlanogramConfig,
   minContentHeightMm = MIN_SHELF_CONTENT_HEIGHT_MM,
 ): number {
   let maxReach = 0;
@@ -60,16 +64,13 @@ export function itemAreaHeightMm(
     maxReach = Math.max(maxReach, itemReachMm(item));
   }
 
-  return Math.max(
-    minContentHeightMm,
-    maxReach + config.topClearance,
-  );
+  return Math.max(minContentHeightMm, maxReach);
 }
 
 /** Lowest allowed minContentHeightMm for a shelf (items must still fit). */
 export function minContentHeightFloorMm(
   items: PlanogramItem[],
-  config: PlanogramConfig,
+  _config: PlanogramConfig,
 ): number {
   let maxReach = 0;
 
@@ -77,7 +78,7 @@ export function minContentHeightFloorMm(
     maxReach = Math.max(maxReach, itemReachMm(item));
   }
 
-  return Math.max(MIN_SHELF_CONTENT_HEIGHT_MM, maxReach + config.topClearance);
+  return Math.max(MIN_SHELF_CONTENT_HEIGHT_MM, maxReach);
 }
 
 /** Max vertical reach (y + height) allowed for placement on a shelf. */
@@ -86,7 +87,7 @@ export function shelfContentBandMm(
   config: PlanogramConfig,
   minContentHeightMm = MIN_SHELF_CONTENT_HEIGHT_MM,
 ): number {
-  return itemAreaHeightMm(items, config, minContentHeightMm) - config.topClearance;
+  return itemAreaHeightMm(items, config, minContentHeightMm);
 }
 
 /** Stack shelf rows: [topClearance] [item area] [shelf line] → repeat. */
