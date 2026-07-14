@@ -18,9 +18,29 @@ import { filterPlanogramsByName } from "@/lib/planograms/filter";
 import type { PlanogramListItem } from "@/lib/planograms/queries";
 import { LayoutGridIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 const SEARCH_DEBOUNCE_MS = 250;
+
+function replaceSearchQuery(
+  router: ReturnType<typeof useRouter>,
+  pathname: string,
+  searchParams: URLSearchParams,
+  query: string,
+) {
+  const params = new URLSearchParams(searchParams.toString());
+  const trimmed = query.trim();
+  if (trimmed) {
+    params.set("q", trimmed);
+  } else {
+    params.delete("q");
+  }
+
+  const queryString = params.toString();
+  router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+    scroll: false,
+  });
+}
 
 export default function PlanogramsPageClient({
   planograms,
@@ -37,45 +57,27 @@ export default function PlanogramsPageClient({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(urlQuery);
-  const [appliedQuery, setAppliedQuery] = useState(urlQuery);
+  const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 
-  useEffect(() => {
+  // Keep the input in sync when the URL changes (back/forward, shared links).
+  if (urlQuery !== prevUrlQuery) {
+    setPrevUrlQuery(urlQuery);
     setSearchInput(urlQuery);
-    setAppliedQuery(urlQuery);
-  }, [urlQuery]);
+  }
 
   const { schedule: scheduleQueryUpdate } = useDebouncedCallback(
     (nextQuery: string) => {
-      setAppliedQuery(nextQuery);
-
-      const params = new URLSearchParams(searchParams.toString());
-      const trimmed = nextQuery.trim();
-      if (trimmed) {
-        params.set("q", trimmed);
-      } else {
-        params.delete("q");
-      }
-
-      const queryString = params.toString();
-      router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
-        scroll: false,
-      });
+      replaceSearchQuery(router, pathname, searchParams, nextQuery);
     },
     SEARCH_DEBOUNCE_MS,
   );
 
-  const filtered = filterPlanogramsByName(planograms, appliedQuery);
-  const hasActiveSearch = appliedQuery.trim().length > 0;
+  const filtered = filterPlanogramsByName(planograms, urlQuery);
+  const hasActiveSearch = urlQuery.trim().length > 0;
 
   const clearSearch = () => {
     setSearchInput("");
-    setAppliedQuery("");
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("q");
-    const queryString = params.toString();
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
-      scroll: false,
-    });
+    replaceSearchQuery(router, pathname, searchParams, "");
   };
 
   const handleCreate = (event: React.FormEvent) => {
@@ -222,8 +224,8 @@ export default function PlanogramsPageClient({
             </EmptyMedia>
             <EmptyTitle>No results</EmptyTitle>
             <EmptyDescription>
-              No planograms match “{appliedQuery.trim()}”. Try a different
-              name or clear the search.
+              No planograms match “{urlQuery.trim()}”. Try a different name or
+              clear the search.
             </EmptyDescription>
           </EmptyHeader>
           <Button type="button" variant="outline" size="sm" onClick={clearSearch}>

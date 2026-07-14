@@ -55,7 +55,6 @@ export function withCandidateOnShelf(
  */
 export function itemAreaHeightMm(
   items: PlanogramItem[],
-  _config: PlanogramConfig,
   minContentHeightMm = MIN_SHELF_CONTENT_HEIGHT_MM,
 ): number {
   let maxReach = 0;
@@ -68,10 +67,7 @@ export function itemAreaHeightMm(
 }
 
 /** Lowest allowed minContentHeightMm for a shelf (items must still fit). */
-export function minContentHeightFloorMm(
-  items: PlanogramItem[],
-  _config: PlanogramConfig,
-): number {
+export function minContentHeightFloorMm(items: PlanogramItem[]): number {
   let maxReach = 0;
 
   for (const item of items) {
@@ -84,10 +80,9 @@ export function minContentHeightFloorMm(
 /** Max vertical reach (y + height) allowed for placement on a shelf. */
 export function shelfContentBandMm(
   items: PlanogramItem[],
-  config: PlanogramConfig,
   minContentHeightMm = MIN_SHELF_CONTENT_HEIGHT_MM,
 ): number {
-  return itemAreaHeightMm(items, config, minContentHeightMm);
+  return itemAreaHeightMm(items, minContentHeightMm);
 }
 
 /** Stack shelf rows: [topClearance] [item area] [shelf line] → repeat. */
@@ -100,7 +95,7 @@ export function computeShelfPositions(
 
   return sorted.map((shelf) => {
     cursorY += config.topClearance;
-    cursorY += itemAreaHeightMm(shelf.items, config, shelf.minContentHeightMm);
+    cursorY += itemAreaHeightMm(shelf.items, shelf.minContentHeightMm);
 
     return { ...shelf, yMm: cursorY };
   });
@@ -115,7 +110,6 @@ function buildShelfLayouts(
     .map((shelf) => {
       const contentHeightMm = itemAreaHeightMm(
         shelf.items,
-        config,
         shelf.minContentHeightMm,
       );
 
