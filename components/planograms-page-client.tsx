@@ -1,5 +1,6 @@
 "use client";
 
+import CatalogPageLayout from "@/components/catalog-page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,11 +59,9 @@ export default function PlanogramsPageClient({
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="font-heading text-base font-semibold uppercase tracking-wider">
-          Planograms
-        </h1>
+    <CatalogPageLayout
+      title="Planograms"
+      action={
         <Button
           type="button"
           variant={showCreate ? "secondary" : "default"}
@@ -72,46 +71,48 @@ export default function PlanogramsPageClient({
           <PlusIcon className="size-4" />
           New
         </Button>
-      </div>
-
-      {showCreate ? (
-        <form
-          onSubmit={handleCreate}
-          className="flex flex-col gap-3 border bg-card p-4"
-        >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="planogram-name">Name</Label>
-            <Input
-              id="planogram-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Beverage aisle"
-              required
-              autoFocus
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={pending}>
-              Create
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCreate(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      ) : null}
-
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
+      }
+      banner={
+        showCreate ? (
+          <form
+            onSubmit={handleCreate}
+            className="flex flex-col gap-3 border bg-card p-4"
+          >
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="planogram-name">Name</Label>
+              <Input
+                id="planogram-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Beverage aisle"
+                required
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" size="sm" disabled={pending}>
+                Create
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCreate(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : null
+      }
+      alert={
+        error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null
+      }
+    >
       {planograms.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No planograms yet. Create one to get started.
@@ -143,6 +144,6 @@ export default function PlanogramsPageClient({
           ))}
         </div>
       )}
-    </div>
+    </CatalogPageLayout>
   );
 }
