@@ -122,7 +122,36 @@ Avoid animating layout during drag. Pan/zoom uses CSS transform only.
 
 - Root: `flex h-full min-h-0 flex-col overflow-hidden` — prevents double scrollbars.
 - Editor split: sidebar `shrink-0`, main column `flex-1 min-h-0`.
-- Lists (`/planograms`, `/skus`): `p-4`, max content width optional later.
+- Lists (`/planograms`, `/skus`): use `CatalogPageLayout` — `p-4`, scrollable main column.
+
+### Catalog pages (`/planograms`, future `/skus`)
+
+Use `components/catalog-page-layout.tsx` for list/catalog routes (not the editor).
+
+```
+┌─────────────────────────────────────────────┐
+│  Title (h1)                    [Primary CTA] │
+├─────────────────────────────────────────────┤
+│  [Search…………………]     [Filter controls]     │  ← optional toolbar
+├─────────────────────────────────────────────┤
+│  banner (inline form, etc.)                 │  ← optional
+│  alert (errors)                             │  ← optional
+├─────────────────────────────────────────────┤
+│  content (grid, table, Empty)               │
+└─────────────────────────────────────────────┘
+```
+
+| Slot | Prop | Notes |
+|------|------|-------|
+| Title | `title` | `font-heading text-base uppercase tracking-wider` |
+| Primary action | `action` | Usually `Button size="sm"` in header right |
+| Search | `search` | Debounced input; max width `sm:max-w-sm` on toolbar |
+| Filters | `filters` | Sort/filter controls; wraps on narrow viewports |
+| Inline panel | `banner` | Create/edit forms above list |
+| Error | `alert` | `text-destructive text-sm`, `role="alert"` |
+| List body | `children` | Grid, table, or `Empty` |
+
+**Example:** `components/planograms-page-client.tsx`.
 
 ---
 
