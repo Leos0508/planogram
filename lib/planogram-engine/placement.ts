@@ -38,7 +38,6 @@ export function canPlace(
   const committedItems = shelf.items.filter((item) => item.id !== id);
   const bandMm = shelfContentBandMm(
     committedItems,
-    config,
     shelf.minContentHeightMm,
   );
   if (candidateWithId.y + candidateWithId.height > bandMm) {
