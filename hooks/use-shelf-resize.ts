@@ -64,10 +64,7 @@ export function useShelfResize({
       if (!shelf) return null;
 
       const delta = pointerY - startPointerYMm;
-      const floor = minContentHeightFloorMm(
-        shelf.items,
-        stateRef.current.config,
-      );
+      const floor = minContentHeightFloorMm(shelf.items);
       return Math.max(floor, Math.round(startMin + delta));
     },
     [pointerPlanogramY],
