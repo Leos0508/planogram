@@ -121,6 +121,7 @@ describe("canPlace", () => {
       },
     ]);
 
+    // Band = minContentHeightMm (500); reach 550 exceeds it
     const result = canPlace(
       {
         id: "preview",
@@ -129,7 +130,7 @@ describe("canPlace", () => {
         x: 200,
         width: 100,
         height: 200,
-        y: 450,
+        y: 350,
         facingsWide: 1,
       },
       "s1",
@@ -140,6 +141,28 @@ describe("canPlace", () => {
     if (!result.ok) {
       expect(result.reason).toBe("OUT_OF_BAND");
     }
+  });
+
+  it("allows placement up to the full content band height", () => {
+    const state = baseState();
+
+    // Reach exactly minContentHeightMm (500) — full teal band is placeable
+    const result = canPlace(
+      {
+        id: "preview",
+        shelfId: "s1",
+        skuId: "sku2",
+        x: 0,
+        width: 100,
+        height: 200,
+        y: 300,
+        facingsWide: 1,
+      },
+      "s1",
+      state.shelves,
+      state.config,
+    );
+    expect(result.ok).toBe(true);
   });
 
   it("allows taller stacks when minContentHeightMm is increased", () => {
