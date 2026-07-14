@@ -6,6 +6,8 @@ export type PlanogramListItem = {
   name: string;
   topClearance: number;
   stackGap: number;
+  shelfCount: number;
+  itemCount: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -14,7 +16,7 @@ export async function getPlanograms(): Promise<
   QueryResult<PlanogramListItem[]>
 > {
   try {
-    const planograms = await prisma.planogram.findMany({
+    const rows = await prisma.planogram.findMany({
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
@@ -23,8 +25,25 @@ export async function getPlanograms(): Promise<
         stackGap: true,
         createdAt: true,
         updatedAt: true,
+        _count: { select: { shelves: true } },
+        shelves: {
+          select: {
+            _count: { select: { planogramShelfItems: true } },
+          },
+        },
       },
     });
+
+    const planograms = rows.map(
+      ({ shelves, _count, ...planogram }) => ({
+        ...planogram,
+        shelfCount: _count.shelves,
+        itemCount: shelves.reduce(
+          (total, shelf) => total + shelf._count.planogramShelfItems,
+          0,
+        ),
+      }),
+    );
 
     return { ok: true, data: planograms };
   } catch (error) {

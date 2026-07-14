@@ -1,13 +1,20 @@
 "use client";
 
 import CatalogPageLayout from "@/components/catalog-page-layout";
+import PlanogramCard from "@/components/planogram-card";
 import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createPlanogram, deletePlanogram } from "@/lib/planograms/actions";
 import type { PlanogramListItem } from "@/lib/planograms/queries";
-import { PlusIcon, Trash2Icon } from "lucide-react";
-import Link from "next/link";
+import { LayoutGridIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -114,35 +121,29 @@ export default function PlanogramsPageClient({
       }
     >
       {planograms.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No planograms yet. Create one to get started.
-        </p>
+        <Empty className="border border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <LayoutGridIcon />
+            </EmptyMedia>
+            <EmptyTitle>No planograms yet</EmptyTitle>
+            <EmptyDescription>
+              Create a planogram to start placing SKUs on shelves.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid w-full list-none grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {planograms.map((planogram) => (
-            <div
-              key={planogram.id}
-              className="flex items-center gap-2 border bg-card px-4 py-3 text-card-foreground"
-            >
-              <Link
-                href={`/planograms/${planogram.id}`}
-                className="min-w-0 flex-1 truncate hover:text-primary"
-              >
-                {planogram.name}
-              </Link>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                title={`Delete ${planogram.name}`}
+            <li key={planogram.id}>
+              <PlanogramCard
+                planogram={planogram}
                 disabled={pending}
-                onClick={() => handleDelete(planogram.id, planogram.name)}
-              >
-                <Trash2Icon className="size-4 text-destructive" />
-              </Button>
-            </div>
+                onDelete={handleDelete}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </CatalogPageLayout>
   );
