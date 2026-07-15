@@ -15,8 +15,13 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      dependencies: ["setup"],
     },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
@@ -28,5 +33,9 @@ export default defineConfig({
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
+        env: {
+          AUTH_SECRET:
+            process.env.AUTH_SECRET ?? "playwright-dev-secret-not-for-production",
+        },
       },
 });

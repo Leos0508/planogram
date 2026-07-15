@@ -13,11 +13,13 @@ Retail shelf layout editor — place SKUs on shelves in millimeters, adjust faci
 
 ```bash
 pnpm install
-cp .env.example .env   # set DATABASE_URL
+cp .env.example .env   # set DATABASE_URL and AUTH_SECRET
 pnpm db:migrate
 pnpm db:seed
 pnpm dev
 ```
+
+Generate `AUTH_SECRET` with `openssl rand -base64 32`.
 
 Open [http://localhost:3000](http://localhost:3000).
 
