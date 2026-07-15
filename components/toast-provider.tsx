@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import {
   createContext,
   useCallback,
@@ -9,16 +10,22 @@ import {
   type ReactNode,
 } from "react";
 
+type ToastKind = "error" | "success";
+
 type ToastMessage = {
   id: string;
   text: string;
+  kind: ToastKind;
 };
 
 type ToastContextValue = {
   error: (text: string) => void;
+  success: (text: string) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
+
+const TOAST_DURATION_MS = 4500;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ToastMessage[]>([]);
@@ -27,16 +34,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setMessages((current) => current.filter((message) => message.id !== id));
   }, []);
 
-  const error = useCallback(
-    (text: string) => {
+  const push = useCallback(
+    (text: string, kind: ToastKind) => {
       const id = crypto.randomUUID();
-      setMessages((current) => [...current, { id, text }]);
-      window.setTimeout(() => dismiss(id), 4500);
+      setMessages((current) => [...current, { id, text, kind }]);
+      window.setTimeout(() => dismiss(id), TOAST_DURATION_MS);
     },
     [dismiss],
   );
 
-  const value = useMemo(() => ({ error }), [error]);
+  const error = useCallback((text: string) => push(text, "error"), [push]);
+  const success = useCallback((text: string) => push(text, "success"), [push]);
+
+  const value = useMemo(() => ({ error, success }), [error, success]);
 
   return (
     <ToastContext.Provider value={value}>
@@ -48,7 +58,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {messages.map((message) => (
           <div
             key={message.id}
-            className="border border-destructive/30 bg-background px-4 py-3 text-sm text-destructive shadow-sm"
+            className={cn(
+              "border bg-background px-4 py-3 text-sm shadow-sm",
+              message.kind === "error"
+                ? "border-destructive/30 text-destructive"
+                : "border-border text-foreground",
+            )}
             role="alert"
           >
             {message.text}

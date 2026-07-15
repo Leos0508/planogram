@@ -2,7 +2,16 @@
 
 import CatalogPageLayout from "@/components/catalog-page-layout";
 import PlanogramCard from "@/components/planogram-card";
+import { useToast } from "@/components/toast-provider";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Empty,
   EmptyDescription,
@@ -24,6 +33,10 @@ import {
   type PlanogramSort,
 } from "@/lib/planograms/filter";
 import type { PlanogramListItem } from "@/lib/planograms/queries";
+import {
+  PLANOGRAM_NAME_MAX_LENGTH,
+  validatePlanogramName,
+} from "@/lib/planograms/validation";
 import { LayoutGridIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -41,6 +54,11 @@ const ITEM_FILTER_OPTIONS: { value: PlanogramItemFilter; label: string }[] = [
   { value: "empty", label: "Empty" },
   { value: "has-items", label: "Has items" },
 ];
+
+type DeleteTarget = {
+  id: string;
+  name: string;
+};
 
 function replaceListParams(
   router: ReturnType<typeof useRouter>,
@@ -93,16 +111,21 @@ export default function PlanogramsPageClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const toast = useToast();
   const urlQuery = searchParams.get("q") ?? "";
   const sort = parsePlanogramSort(searchParams.get("sort"));
   const itemFilter = parsePlanogramItemFilter(searchParams.get("filter"));
 
-  const [pending, startTransition] = useTransition();
-  const [showCreate, setShowCreate] = useState(false);
-  const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [isCreating, startCreateTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createNameError, setCreateNameError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [searchInput, setSearchInput] = useState(urlQuery);
   const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
+
+  const listBusy = isCreating || isDeleting;
 
   // Keep the input in sync when the URL changes (back/forward, shared links).
   if (urlQuery !== prevUrlQuery) {
@@ -139,226 +162,308 @@ export default function PlanogramsPageClient({
     });
   };
 
+  const resetCreateDialog = () => {
+    setCreateName("");
+    setCreateNameError(null);
+  };
+
+  const handleCreateOpenChange = (open: boolean) => {
+    if (isCreating) return;
+    setCreateOpen(open);
+    if (!open) resetCreateDialog();
+  };
+
   const handleCreate = (event: React.FormEvent) => {
     event.preventDefault();
-    setError(null);
+    const validationError = validatePlanogramName(createName);
+    if (validationError) {
+      setCreateNameError(validationError);
+      return;
+    }
 
-    startTransition(async () => {
-      const result = await createPlanogram({ name });
+    setCreateNameError(null);
+    startCreateTransition(async () => {
+      const result = await createPlanogram({ name: createName });
       if (!result.ok) {
-        setError(result.message);
+        toast.error(result.message);
         return;
       }
-      setName("");
-      setShowCreate(false);
+      setCreateOpen(false);
+      resetCreateDialog();
       router.push(`/planograms/${result.data.id}`);
     });
   };
 
-  const handleDelete = (id: string, planogramName: string) => {
-    if (
-      !window.confirm(
-        `Delete "${planogramName}"? All items on this planogram will be removed.`,
-      )
-    ) {
-      return;
-    }
+  const handleDeleteOpenChange = (open: boolean) => {
+    if (isDeleting) return;
+    if (!open) setDeleteTarget(null);
+  };
 
-    setError(null);
-    startTransition(async () => {
-      const result = await deletePlanogram({ id });
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+
+    startDeleteTransition(async () => {
+      const result = await deletePlanogram({ id: deleteTarget.id });
       if (!result.ok) {
-        setError(result.message);
+        toast.error(result.message);
         return;
       }
+      toast.success(`Deleted “${deleteTarget.name}”`);
+      setDeleteTarget(null);
       router.refresh();
     });
   };
 
   return (
-    <CatalogPageLayout
-      title="Planograms"
-      action={
-        <Button
-          type="button"
-          variant={showCreate ? "secondary" : "default"}
-          size="sm"
-          onClick={() => setShowCreate((open) => !open)}
-        >
-          <PlusIcon className="size-4" />
-          New
-        </Button>
-      }
-      search={
-        <div className="relative">
-          <SearchIcon
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            id="planogram-search"
-            type="text"
-            value={searchInput}
-            onChange={(event) => {
-              const value = event.target.value;
-              setSearchInput(value);
-              scheduleQueryUpdate(value);
-            }}
-            placeholder="Search by name"
-            className="pr-9 pl-9"
-            aria-label="Search planograms by name"
-          />
-          {searchInput ? (
+    <>
+      <CatalogPageLayout
+        title="Planograms"
+        action={
+          <Button
+            type="button"
+            size="sm"
+            disabled={listBusy}
+            onClick={() => setCreateOpen(true)}
+          >
+            <PlusIcon className="size-4" />
+            New
+          </Button>
+        }
+        search={
+          <div className="relative">
+            <SearchIcon
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <Input
+              id="planogram-search"
+              type="text"
+              value={searchInput}
+              onChange={(event) => {
+                const value = event.target.value;
+                setSearchInput(value);
+                scheduleQueryUpdate(value);
+              }}
+              placeholder="Search by name"
+              className="pr-9 pl-9"
+              aria-label="Search planograms by name"
+              disabled={listBusy}
+            />
+            {searchInput ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="absolute top-1/2 right-1 -translate-y-1/2"
+                title="Clear search"
+                onClick={clearSearch}
+                disabled={listBusy}
+              >
+                <XIcon className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        }
+        filters={
+          <div className="flex flex-wrap items-center gap-2">
+            <Label htmlFor="planogram-sort" className="sr-only">
+              Sort planograms
+            </Label>
+            <select
+              id="planogram-sort"
+              value={sort}
+              disabled={listBusy}
+              onChange={(event) => {
+                replaceListParams(router, pathname, searchParams, {
+                  sort: parsePlanogramSort(event.target.value),
+                });
+              }}
+              className="h-9 border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Sort planograms"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <div
+              className="flex flex-wrap items-center gap-1"
+              role="group"
+              aria-label="Filter by items"
+            >
+              {ITEM_FILTER_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  size="sm"
+                  variant={itemFilter === option.value ? "default" : "outline"}
+                  aria-pressed={itemFilter === option.value}
+                  disabled={listBusy}
+                  onClick={() => {
+                    replaceListParams(router, pathname, searchParams, {
+                      filter: option.value,
+                    });
+                  }}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        }
+      >
+        {planograms.length === 0 ? (
+          <Empty className="border border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <LayoutGridIcon />
+              </EmptyMedia>
+              <EmptyTitle>No planograms yet</EmptyTitle>
+              <EmptyDescription>
+                Create a planogram to start placing SKUs on shelves.
+              </EmptyDescription>
+            </EmptyHeader>
             <Button
               type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="absolute top-1/2 right-1 -translate-y-1/2"
-              title="Clear search"
-              onClick={clearSearch}
+              size="sm"
+              disabled={listBusy}
+              onClick={() => setCreateOpen(true)}
             >
-              <XIcon className="size-4" />
+              <PlusIcon className="size-4" />
+              New planogram
             </Button>
-          ) : null}
-        </div>
-      }
-      filters={
-        <div className="flex flex-wrap items-center gap-2">
-          <Label htmlFor="planogram-sort" className="sr-only">
-            Sort planograms
-          </Label>
-          <select
-            id="planogram-sort"
-            value={sort}
-            onChange={(event) => {
-              replaceListParams(router, pathname, searchParams, {
-                sort: parsePlanogramSort(event.target.value),
-              });
-            }}
-            className="h-9 border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-            aria-label="Sort planograms"
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
+          </Empty>
+        ) : filtered.length === 0 && hasListConstraints ? (
+          <Empty className="border border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <SearchIcon />
+              </EmptyMedia>
+              <EmptyTitle>No results</EmptyTitle>
+              <EmptyDescription>
+                {hasActiveSearch && hasActiveItemFilter
+                  ? `No planograms match “${urlQuery.trim()}” with the current filter.`
+                  : hasActiveSearch
+                    ? `No planograms match “${urlQuery.trim()}”. Try a different name or clear the search.`
+                    : "No planograms match the current filter. Try All or clear filters."}
+              </EmptyDescription>
+            </EmptyHeader>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={clearListConstraints}
+              disabled={listBusy}
+            >
+              Clear filters
+            </Button>
+          </Empty>
+        ) : (
+          <ul className="grid w-full list-none grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((planogram) => (
+              <li key={planogram.id}>
+                <PlanogramCard
+                  planogram={planogram}
+                  disabled={listBusy}
+                  onDelete={(id, name) => setDeleteTarget({ id, name })}
+                />
+              </li>
             ))}
-          </select>
+          </ul>
+        )}
+      </CatalogPageLayout>
 
-          <div
-            className="flex flex-wrap items-center gap-1"
-            role="group"
-            aria-label="Filter by items"
-          >
-            {ITEM_FILTER_OPTIONS.map((option) => (
-              <Button
-                key={option.value}
-                type="button"
-                size="sm"
-                variant={itemFilter === option.value ? "default" : "outline"}
-                aria-pressed={itemFilter === option.value}
-                onClick={() => {
-                  replaceListParams(router, pathname, searchParams, {
-                    filter: option.value,
-                  });
-                }}
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-      }
-      banner={
-        showCreate ? (
-          <form
-            onSubmit={handleCreate}
-            className="flex flex-col gap-3 border bg-card p-4"
-          >
+      <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
+        <DialogContent showCloseButton={!isCreating}>
+          <DialogHeader>
+            <DialogTitle>New planogram</DialogTitle>
+            <DialogDescription>
+              Give your planogram a name. You can add shelves and SKUs in the
+              editor.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="planogram-name">Name</Label>
               <Input
                 id="planogram-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
+                value={createName}
+                onChange={(event) => {
+                  setCreateName(event.target.value);
+                  if (createNameError) setCreateNameError(null);
+                }}
                 placeholder="Beverage aisle"
+                maxLength={PLANOGRAM_NAME_MAX_LENGTH}
                 required
                 autoFocus
+                disabled={isCreating}
+                aria-invalid={createNameError ? true : undefined}
+                aria-describedby={
+                  createNameError ? "planogram-name-error" : undefined
+                }
               />
+              {createNameError ? (
+                <p
+                  id="planogram-name-error"
+                  className="text-sm text-destructive"
+                  role="alert"
+                >
+                  {createNameError}
+                </p>
+              ) : null}
             </div>
-            <div className="flex gap-2">
-              <Button type="submit" size="sm" disabled={pending}>
-                Create
-              </Button>
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                onClick={() => setShowCreate(false)}
+                disabled={isCreating}
+                onClick={() => handleCreateOpenChange(false)}
               >
                 Cancel
               </Button>
-            </div>
+              <Button type="submit" disabled={isCreating}>
+                {isCreating ? "Creating…" : "Create"}
+              </Button>
+            </DialogFooter>
           </form>
-        ) : null
-      }
-      alert={
-        error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null
-      }
-    >
-      {planograms.length === 0 ? (
-        <Empty className="border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <LayoutGridIcon />
-            </EmptyMedia>
-            <EmptyTitle>No planograms yet</EmptyTitle>
-            <EmptyDescription>
-              Create a planogram to start placing SKUs on shelves.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : filtered.length === 0 && hasListConstraints ? (
-        <Empty className="border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <SearchIcon />
-            </EmptyMedia>
-            <EmptyTitle>No results</EmptyTitle>
-            <EmptyDescription>
-              {hasActiveSearch && hasActiveItemFilter
-                ? `No planograms match “${urlQuery.trim()}” with the current filter.`
-                : hasActiveSearch
-                  ? `No planograms match “${urlQuery.trim()}”. Try a different name or clear the search.`
-                  : "No planograms match the current filter. Try All or clear filters."}
-            </EmptyDescription>
-          </EmptyHeader>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={clearListConstraints}
-          >
-            Clear filters
-          </Button>
-        </Empty>
-      ) : (
-        <ul className="grid w-full list-none grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((planogram) => (
-            <li key={planogram.id}>
-              <PlanogramCard
-                planogram={planogram}
-                disabled={pending}
-                onDelete={handleDelete}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </CatalogPageLayout>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteTarget !== null} onOpenChange={handleDeleteOpenChange}>
+        <DialogContent showCloseButton={!isDeleting}>
+          <DialogHeader>
+            <DialogTitle>Delete planogram</DialogTitle>
+            <DialogDescription>
+              {deleteTarget ? (
+                <>
+                  Delete <strong>{deleteTarget.name}</strong>? All shelves and
+                  placed items on this planogram will be permanently removed.
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDeleting}
+              onClick={() => handleDeleteOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={handleDeleteConfirm}
+            >
+              {isDeleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

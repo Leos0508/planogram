@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
+import { validatePlanogramName } from "@/lib/planograms/validation";
 import { revalidatePath } from "next/cache";
 
 export type PlanogramItemRecord = {
@@ -191,7 +192,8 @@ export async function createPlanogram(input: {
   stackGap?: number;
 }): Promise<ActionResult<PlanogramRecord>> {
   const name = input.name.trim();
-  if (!name) return { ok: false, message: "Name is required" };
+  const nameError = validatePlanogramName(name);
+  if (nameError) return { ok: false, message: nameError };
 
   const shelfCount = input.shelfCount ?? DEFAULT_SHELF_COUNT;
   if (shelfCount < 1 || shelfCount > 20) {
@@ -239,7 +241,8 @@ export async function updatePlanogram(input: {
   stackGap: number;
 }): Promise<ActionResult<PlanogramRecord>> {
   const name = input.name.trim();
-  if (!name) return { ok: false, message: "Name is required" };
+  const nameError = validatePlanogramName(name);
+  if (nameError) return { ok: false, message: nameError };
   if (input.topClearance < 0 || input.stackGap < 0) {
     return { ok: false, message: "Clearance and gap must be non-negative" };
   }
