@@ -12,6 +12,12 @@ export type PlanogramListItem = {
   updatedAt: Date;
 };
 
+/**
+ * Fetches the full catalog list (updatedAt desc). Search, item-presence filter,
+ * and alternate sorts are applied client-side in `lib/planograms/filter.ts`
+ * from URL params (`q`, `sort`, `filter`) — fine for single-user catalogs;
+ * move server-side when pagination or tenancy requires it.
+ */
 export async function getPlanograms(): Promise<
   QueryResult<PlanogramListItem[]>
 > {

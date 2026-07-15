@@ -14,7 +14,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import { createPlanogram, deletePlanogram } from "@/lib/planograms/actions";
-import { filterPlanogramsByName } from "@/lib/planograms/filter";
+import {
+  applyPlanogramListQuery,
+  DEFAULT_PLANOGRAM_ITEM_FILTER,
+  DEFAULT_PLANOGRAM_SORT,
+  parsePlanogramItemFilter,
+  parsePlanogramSort,
+  type PlanogramItemFilter,
+  type PlanogramSort,
+} from "@/lib/planograms/filter";
 import type { PlanogramListItem } from "@/lib/planograms/queries";
 import { LayoutGridIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -22,18 +30,53 @@ import { useState, useTransition } from "react";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-function replaceSearchQuery(
+const SORT_OPTIONS: { value: PlanogramSort; label: string }[] = [
+  { value: "updated", label: "Last updated" },
+  { value: "name", label: "Name A–Z" },
+  { value: "created", label: "Created date" },
+];
+
+const ITEM_FILTER_OPTIONS: { value: PlanogramItemFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "empty", label: "Empty" },
+  { value: "has-items", label: "Has items" },
+];
+
+function replaceListParams(
   router: ReturnType<typeof useRouter>,
   pathname: string,
   searchParams: URLSearchParams,
-  query: string,
+  patch: {
+    q?: string | null;
+    sort?: PlanogramSort;
+    filter?: PlanogramItemFilter;
+  },
 ) {
   const params = new URLSearchParams(searchParams.toString());
-  const trimmed = query.trim();
-  if (trimmed) {
-    params.set("q", trimmed);
-  } else {
-    params.delete("q");
+
+  if ("q" in patch) {
+    const trimmed = patch.q?.trim() ?? "";
+    if (trimmed) {
+      params.set("q", trimmed);
+    } else {
+      params.delete("q");
+    }
+  }
+
+  if (patch.sort !== undefined) {
+    if (patch.sort === DEFAULT_PLANOGRAM_SORT) {
+      params.delete("sort");
+    } else {
+      params.set("sort", patch.sort);
+    }
+  }
+
+  if (patch.filter !== undefined) {
+    if (patch.filter === DEFAULT_PLANOGRAM_ITEM_FILTER) {
+      params.delete("filter");
+    } else {
+      params.set("filter", patch.filter);
+    }
   }
 
   const queryString = params.toString();
@@ -51,6 +94,8 @@ export default function PlanogramsPageClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q") ?? "";
+  const sort = parsePlanogramSort(searchParams.get("sort"));
+  const itemFilter = parsePlanogramItemFilter(searchParams.get("filter"));
 
   const [pending, startTransition] = useTransition();
   const [showCreate, setShowCreate] = useState(false);
@@ -67,17 +112,31 @@ export default function PlanogramsPageClient({
 
   const { schedule: scheduleQueryUpdate } = useDebouncedCallback(
     (nextQuery: string) => {
-      replaceSearchQuery(router, pathname, searchParams, nextQuery);
+      replaceListParams(router, pathname, searchParams, { q: nextQuery });
     },
     SEARCH_DEBOUNCE_MS,
   );
 
-  const filtered = filterPlanogramsByName(planograms, urlQuery);
+  const filtered = applyPlanogramListQuery(planograms, {
+    query: urlQuery,
+    sort,
+    itemFilter,
+  });
   const hasActiveSearch = urlQuery.trim().length > 0;
+  const hasActiveItemFilter = itemFilter !== DEFAULT_PLANOGRAM_ITEM_FILTER;
+  const hasListConstraints = hasActiveSearch || hasActiveItemFilter;
 
   const clearSearch = () => {
     setSearchInput("");
-    replaceSearchQuery(router, pathname, searchParams, "");
+    replaceListParams(router, pathname, searchParams, { q: "" });
+  };
+
+  const clearListConstraints = () => {
+    setSearchInput("");
+    replaceListParams(router, pathname, searchParams, {
+      q: "",
+      filter: DEFAULT_PLANOGRAM_ITEM_FILTER,
+    });
   };
 
   const handleCreate = (event: React.FormEvent) => {
@@ -163,6 +222,53 @@ export default function PlanogramsPageClient({
           ) : null}
         </div>
       }
+      filters={
+        <div className="flex flex-wrap items-center gap-2">
+          <Label htmlFor="planogram-sort" className="sr-only">
+            Sort planograms
+          </Label>
+          <select
+            id="planogram-sort"
+            value={sort}
+            onChange={(event) => {
+              replaceListParams(router, pathname, searchParams, {
+                sort: parsePlanogramSort(event.target.value),
+              });
+            }}
+            className="h-9 border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+            aria-label="Sort planograms"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <div
+            className="flex flex-wrap items-center gap-1"
+            role="group"
+            aria-label="Filter by items"
+          >
+            {ITEM_FILTER_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                size="sm"
+                variant={itemFilter === option.value ? "default" : "outline"}
+                aria-pressed={itemFilter === option.value}
+                onClick={() => {
+                  replaceListParams(router, pathname, searchParams, {
+                    filter: option.value,
+                  });
+                }}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      }
       banner={
         showCreate ? (
           <form
@@ -216,7 +322,7 @@ export default function PlanogramsPageClient({
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
-      ) : filtered.length === 0 && hasActiveSearch ? (
+      ) : filtered.length === 0 && hasListConstraints ? (
         <Empty className="border border-dashed">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -224,12 +330,20 @@ export default function PlanogramsPageClient({
             </EmptyMedia>
             <EmptyTitle>No results</EmptyTitle>
             <EmptyDescription>
-              No planograms match “{urlQuery.trim()}”. Try a different name or
-              clear the search.
+              {hasActiveSearch && hasActiveItemFilter
+                ? `No planograms match “${urlQuery.trim()}” with the current filter.`
+                : hasActiveSearch
+                  ? `No planograms match “${urlQuery.trim()}”. Try a different name or clear the search.`
+                  : "No planograms match the current filter. Try All or clear filters."}
             </EmptyDescription>
           </EmptyHeader>
-          <Button type="button" variant="outline" size="sm" onClick={clearSearch}>
-            Clear search
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={clearListConstraints}
+          >
+            Clear filters
           </Button>
         </Empty>
       ) : (
