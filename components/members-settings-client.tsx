@@ -180,7 +180,7 @@ export default function MembersSettingsClient({
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-sm font-medium">Members</h2>
+          <h2 className="text-sm font-medium">People</h2>
           <p className="text-sm text-muted-foreground">
             Role and access for everyone in this workspace.
           </p>

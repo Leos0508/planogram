@@ -82,7 +82,7 @@ test.describe("authenticated smoke", () => {
     await expect(page.getByRole("heading", { name: "Workspace" })).toBeVisible();
     await page.getByRole("complementary").getByRole("link", { name: "Members" }).click();
     await expect(page).toHaveURL(/\/settings\/members$/);
-    await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Members" })).toBeVisible();
     await expect(
       page.getByRole("button", { name: /Create invite link|Copy link/ }),
     ).toBeVisible();
@@ -95,7 +95,7 @@ test.describe("authenticated smoke", () => {
     page,
   }) => {
     await page.goto("/settings/members");
-    await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Members" })).toBeVisible();
 
     const createButton = page.getByRole("button", { name: "Create invite link" });
     const copyButton = page.getByRole("button", { name: "Copy link" });
