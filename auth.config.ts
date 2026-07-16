@@ -1,6 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 
-const protectedPrefixes = ["/planograms", "/skus"];
+const protectedPrefixes = ["/planograms", "/skus", "/settings"];
 
 function isProtectedPath(pathname: string) {
   return protectedPrefixes.some(

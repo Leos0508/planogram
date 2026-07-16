@@ -26,6 +26,18 @@ test.describe("smoke", () => {
     await page.getByRole("navigation").getByRole("link", { name: "Planograms" }).click();
     await expect(page).toHaveURL(/\/login/);
   });
+
+  test("unauthenticated users are redirected to login from settings", async ({
+    page,
+  }) => {
+    await page.goto("/settings");
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("login page has no app navbar", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("navigation")).toHaveCount(0);
+  });
 });
 
 test.describe("authenticated smoke", () => {
@@ -57,5 +69,22 @@ test.describe("authenticated smoke", () => {
   test("skus page loads when signed in", async ({ page }) => {
     await page.goto("/skus");
     await expect(page.getByRole("heading", { name: /skus/i })).toBeVisible();
+  });
+
+  test("settings stubs are reachable from user menu", async ({ page }) => {
+    await page.goto("/planograms");
+    await page
+      .getByRole("navigation")
+      .getByRole("button", { name: /E2E User|e2e@test\.local|Account/ })
+      .click();
+    await page.getByRole("menuitem", { name: "Settings" }).click();
+    await expect(page).toHaveURL(/\/settings$/);
+    await expect(page.getByRole("heading", { name: "Workspace" })).toBeVisible();
+    await page.getByRole("complementary").getByRole("link", { name: "Members" }).click();
+    await expect(page).toHaveURL(/\/settings\/members$/);
+    await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
+    await page.getByRole("complementary").getByRole("link", { name: "Account" }).click();
+    await expect(page).toHaveURL(/\/settings\/account$/);
+    await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
   });
 });
