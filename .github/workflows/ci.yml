@@ -63,6 +63,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://planogram:planogram@127.0.0.1:5432/planogram
       AUTH_SECRET: ci-test-secret-not-for-production
+      AUTH_TRUST_HOST: "true"
       CI: true
     steps:
       - uses: actions/checkout@v4
