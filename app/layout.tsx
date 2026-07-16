@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import NavMenu from "@/components/nav-menu";
 import { ToastProvider } from "@/components/toast-provider";
 
 const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
@@ -46,7 +45,6 @@ export default function RootLayout({
         suppressHydrationWarning
         className="flex h-full min-h-0 flex-col overflow-hidden"
       >
-        <NavMenu />
         <ToastProvider>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {children}
