@@ -36,6 +36,7 @@ export default defineConfig({
         env: {
           AUTH_SECRET:
             process.env.AUTH_SECRET ?? "playwright-dev-secret-not-for-production",
+          AUTH_TRUST_HOST: "true",
         },
       },
 });
