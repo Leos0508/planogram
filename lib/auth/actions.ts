@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { createWorkspaceForUser } from "@/lib/workspaces/bootstrap";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -75,12 +76,18 @@ export async function register(
   }
 
   const passwordHash = await hash(password, 12);
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       name,
       passwordHash,
     },
+  });
+
+  await createWorkspaceForUser(prisma, {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
   });
 
   try {

@@ -12,36 +12,84 @@ datasource db {
   provider = "postgresql"
 }
 
+enum WorkspaceTier {
+  FREE
+  UNLIMITED
+}
+
+enum WorkspaceRole {
+  OWNER
+  MEMBER
+}
+
+model Workspace {
+  id        String        @id @default(cuid())
+  name      String
+  slug      String?       @unique
+  tier      WorkspaceTier @default(FREE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  members    WorkspaceMember[]
+  planograms Planogram[]
+  skus       SKU[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
 model SKU {
-  id             String          @id @default(uuid())
-  name           String
-  sku            String          @unique
-  width          Int
-  height         Int
-  imageUrl       String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String
+  sku         String
+  width       Int
+  height      Int
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   planogramItems PlanogramItem[]
+
+  @@unique([workspaceId, sku])
+  @@index([workspaceId])
 }
 
 model Planogram {
   id           String   @id @default(uuid())
+  workspaceId  String
   name         String
   topClearance Int
   stackGap     Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  shelves PlanogramShelf[]
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  shelves   PlanogramShelf[]
+
+  @@index([workspaceId])
 }
 
 model PlanogramShelf {
-  id          String   @id @default(uuid())
-  planogramId String
-  index       Int
-  minContentHeightMm Int @default(500)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  planogramId        String
+  index              Int
+  minContentHeightMm Int      @default(500)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   planogram           Planogram       @relation(fields: [planogramId], references: [id])
   planogramShelfItems PlanogramItem[]
@@ -74,6 +122,7 @@ model User {
   passwordHash  String?
   accounts      Account[]
   sessions      Session[]
+  memberships   WorkspaceMember[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

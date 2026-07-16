@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
+import { requireSessionUser } from "@/lib/auth/session";
+import { getPrimaryWorkspaceId } from "@/lib/workspaces/bootstrap";
 import { revalidatePath } from "next/cache";
 
 export type SkuRecord = {
@@ -68,8 +70,14 @@ export async function createSku(input: {
   if (error) return { ok: false, message: error };
 
   try {
+    const session = await requireSessionUser();
+    if (!session.ok) return { ok: false, message: session.message };
+
+    const workspaceId = await getPrimaryWorkspaceId(prisma, session.user);
+
     const created = await prisma.sKU.create({
       data: {
+        workspaceId,
         name: input.name.trim(),
         sku: input.sku.trim(),
         width: Math.round(input.width),
