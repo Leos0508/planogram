@@ -4,8 +4,11 @@ import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
 import { validatePlanogramName } from "@/lib/planograms/validation";
-import { requireSessionUser } from "@/lib/auth/session";
-import { getPrimaryWorkspaceId } from "@/lib/workspaces/bootstrap";
+import {
+  findPlanogramInWorkspace,
+  findSkuInWorkspace,
+  requireWorkspace,
+} from "@/lib/workspaces/current";
 import { revalidatePath } from "next/cache";
 
 export type PlanogramItemRecord = {
@@ -35,15 +38,21 @@ export async function placePlanogramItem(input: {
   facingsWide?: number;
 }): Promise<ActionResult<PlanogramItemRecord>> {
   try {
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await findPlanogramInWorkspace(
+      input.planogramId,
+      access.workspace.id,
+    );
+    if (!planogram) return { ok: false, message: "Planogram not found" };
+
     const shelf = await shelfBelongsToPlanogram(input.shelfId, input.planogramId);
     if (!shelf) {
       return { ok: false, message: "Shelf not found" };
     }
 
-    const sku = await prisma.sKU.findUnique({
-      where: { id: input.skuId },
-      select: { id: true, width: true, height: true },
-    });
+    const sku = await findSkuInWorkspace(input.skuId, access.workspace.id);
     if (!sku) {
       return { ok: false, message: "SKU not found" };
     }
@@ -75,6 +84,15 @@ export async function removePlanogramItem(input: {
   itemId: string;
 }): Promise<ActionResult<{ id: string }>> {
   try {
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await findPlanogramInWorkspace(
+      input.planogramId,
+      access.workspace.id,
+    );
+    if (!planogram) return { ok: false, message: "Planogram not found" };
+
     const item = await prisma.planogramItem.findUnique({
       where: { id: input.itemId },
       include: {
@@ -103,6 +121,15 @@ export async function updatePlanogramItemPosition(input: {
   y: number;
 }): Promise<ActionResult<PlanogramItemRecord>> {
   try {
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await findPlanogramInWorkspace(
+      input.planogramId,
+      access.workspace.id,
+    );
+    if (!planogram) return { ok: false, message: "Planogram not found" };
+
     const item = await prisma.planogramItem.findUnique({
       where: { id: input.itemId },
       include: {
@@ -141,6 +168,15 @@ export async function updatePlanogramItemFacings(input: {
   facingsWide: number;
 }): Promise<ActionResult<PlanogramItemRecord>> {
   try {
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await findPlanogramInWorkspace(
+      input.planogramId,
+      access.workspace.id,
+    );
+    if (!planogram) return { ok: false, message: "Planogram not found" };
+
     const facingsWide = Math.min(
       99,
       Math.max(1, Math.floor(input.facingsWide)),
@@ -209,14 +245,12 @@ export async function createPlanogram(input: {
   }
 
   try {
-    const session = await requireSessionUser();
-    if (!session.ok) return { ok: false, message: session.message };
-
-    const workspaceId = await getPrimaryWorkspaceId(prisma, session.user);
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await prisma.planogram.create({
       data: {
-        workspaceId,
+        workspaceId: access.workspace.id,
         name,
         topClearance: Math.round(topClearance),
         stackGap: Math.round(stackGap),
@@ -256,9 +290,13 @@ export async function updatePlanogram(input: {
   }
 
   try {
-    const existing = await prisma.planogram.findUnique({
-      where: { id: input.id },
-    });
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const existing = await findPlanogramInWorkspace(
+      input.id,
+      access.workspace.id,
+    );
     if (!existing) return { ok: false, message: "Planogram not found" };
 
     const updated = await prisma.planogram.update({
@@ -283,8 +321,11 @@ export async function deletePlanogram(input: {
   id: string;
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const planogram = await prisma.planogram.findUnique({
-      where: { id: input.id },
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await prisma.planogram.findFirst({
+      where: { id: input.id, workspaceId: access.workspace.id },
       include: { shelves: { select: { id: true } } },
     });
     if (!planogram) return { ok: false, message: "Planogram not found" };
@@ -311,8 +352,11 @@ export async function addPlanogramShelf(input: {
   planogramId: string;
 }): Promise<ActionResult<PlanogramShelfRecord>> {
   try {
-    const planogram = await prisma.planogram.findUnique({
-      where: { id: input.planogramId },
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await prisma.planogram.findFirst({
+      where: { id: input.planogramId, workspaceId: access.workspace.id },
       include: {
         shelves: { orderBy: { index: "desc" }, take: 1 },
       },
@@ -351,6 +395,15 @@ export async function updatePlanogramShelfMinHeight(input: {
   }
 
   try {
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await findPlanogramInWorkspace(
+      input.planogramId,
+      access.workspace.id,
+    );
+    if (!planogram) return { ok: false, message: "Planogram not found" };
+
     const shelf = await prisma.planogramShelf.findFirst({
       where: { id: input.shelfId, planogramId: input.planogramId },
     });
@@ -374,6 +427,15 @@ export async function removePlanogramShelf(input: {
   shelfId: string;
 }): Promise<ActionResult<{ id: string }>> {
   try {
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await findPlanogramInWorkspace(
+      input.planogramId,
+      access.workspace.id,
+    );
+    if (!planogram) return { ok: false, message: "Planogram not found" };
+
     const shelf = await prisma.planogramShelf.findFirst({
       where: { id: input.shelfId, planogramId: input.planogramId },
       include: { _count: { select: { planogramShelfItems: true } } },
