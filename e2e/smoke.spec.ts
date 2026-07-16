@@ -107,4 +107,15 @@ test.describe("authenticated smoke", () => {
     await expect(copyButton).toBeVisible();
     await expect(page.locator("code")).toContainText("/invite/");
   });
+
+  test("account settings shows delete account danger zone", async ({
+    page,
+  }) => {
+    await page.goto("/settings/account");
+    await expect(page.getByRole("heading", { level: 1, name: "Account" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Danger zone" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Delete account" }),
+    ).toBeVisible();
+  });
 });
