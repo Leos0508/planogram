@@ -37,6 +37,9 @@ export default defineConfig({
           AUTH_SECRET:
             process.env.AUTH_SECRET ?? "playwright-dev-secret-not-for-production",
           AUTH_TRUST_HOST: "true",
+          ...(process.env.DATABASE_URL
+            ? { DATABASE_URL: process.env.DATABASE_URL }
+            : {}),
         },
       },
 });
