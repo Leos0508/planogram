@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth-forms";
 
 export default function LoginPage() {
@@ -10,7 +11,9 @@ export default function LoginPage() {
             Access planograms and SKU management.
           </p>
         </div>
-        <LoginForm />
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
       </div>
     </main>
   );

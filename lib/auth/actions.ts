@@ -25,12 +25,21 @@ function normalizeName(name: FormDataEntryValue | null) {
   return value.length > 0 ? value : null;
 }
 
+/** Same-origin relative path only (blocks open redirects). */
+function safeRedirectPath(value: FormDataEntryValue | null): string {
+  if (typeof value !== "string") return "/planograms";
+  const path = value.trim();
+  if (!path.startsWith("/") || path.startsWith("//")) return "/planograms";
+  return path;
+}
+
 export async function login(
   _prevState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
   const email = normalizeEmail(formData.get("email"));
   const password = normalizePassword(formData.get("password"));
+  const redirectTo = safeRedirectPath(formData.get("callbackUrl"));
 
   if (!email || !password) {
     return { error: "Email and password are required." };
@@ -40,7 +49,7 @@ export async function login(
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/planograms",
+      redirectTo,
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -59,6 +68,7 @@ export async function register(
   const email = normalizeEmail(formData.get("email"));
   const password = normalizePassword(formData.get("password"));
   const name = normalizeName(formData.get("name"));
+  const redirectTo = safeRedirectPath(formData.get("callbackUrl"));
 
   if (!email || !password) {
     return { error: "Email and password are required." };
@@ -94,7 +104,7 @@ export async function register(
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/planograms",
+      redirectTo,
     });
   } catch (error) {
     if (error instanceof AuthError) {

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { RegisterForm } from "@/components/auth-forms";
 
 export default function RegisterPage() {
@@ -10,7 +11,9 @@ export default function RegisterPage() {
             Register to start building planograms.
           </p>
         </div>
-        <RegisterForm />
+        <Suspense fallback={null}>
+          <RegisterForm />
+        </Suspense>
       </div>
     </main>
   );

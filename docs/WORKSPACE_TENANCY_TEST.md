@@ -1,6 +1,6 @@
 # Workspace tenancy — manual test plan (PLA-30)
 
-Single-workspace v1: each user has one primary workspace (oldest membership). No switcher.
+Single-workspace v1: current workspace is the newest membership (so invite accept surfaces the shared workspace). No switcher (Plan 02).
 
 ## Setup
 

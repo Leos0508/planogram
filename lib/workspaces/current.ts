@@ -1,14 +1,23 @@
-import { WorkspaceRole, type WorkspaceTier } from "@/generated/prisma/client";
+import {
+  WorkspaceAccess,
+  WorkspaceRole,
+  type WorkspaceTier,
+} from "@/generated/prisma/client";
 import { requireSessionUser, type SessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { createWorkspaceForUser } from "@/lib/workspaces/bootstrap";
+import {
+  canManageMembers,
+  canWriteWorkspace,
+} from "@/lib/workspaces/capabilities";
 import { isCrossWorkspaceMiss } from "@/lib/workspaces/access";
 
 export { isCrossWorkspaceMiss };
 
 /**
  * Current workspace for the signed-in user.
- * v1: oldest membership (single workspace). Structured for a future switcher.
+ * v1: newest membership so accepting an invite surfaces the shared workspace.
+ * Plan 02 replaces this with an explicit active-workspace preference.
  */
 export type CurrentWorkspace = {
   id: string;
@@ -16,6 +25,7 @@ export type CurrentWorkspace = {
   slug: string | null;
   tier: WorkspaceTier;
   role: WorkspaceRole;
+  access: WorkspaceAccess;
   user: SessionUser;
 };
 
@@ -27,7 +37,7 @@ export async function getCurrentWorkspace(): Promise<CurrentWorkspace | null> {
 
   const membership = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     include: { workspace: true },
   });
 
@@ -38,6 +48,7 @@ export async function getCurrentWorkspace(): Promise<CurrentWorkspace | null> {
       slug: membership.workspace.slug,
       tier: membership.workspace.tier,
       role: membership.role,
+      access: membership.access,
       user: session.user,
     };
   }
@@ -54,6 +65,7 @@ export async function getCurrentWorkspace(): Promise<CurrentWorkspace | null> {
     slug: workspace.slug,
     tier: workspace.tier,
     role: WorkspaceRole.OWNER,
+    access: WorkspaceAccess.FULL,
     user: session.user,
   };
 }
@@ -66,6 +78,34 @@ export async function requireWorkspace(): Promise<
     return { ok: false, message: "You must be signed in." };
   }
   return { ok: true, workspace };
+}
+
+export async function requireWorkspaceWrite(): Promise<
+  { ok: true; workspace: CurrentWorkspace } | { ok: false; message: string }
+> {
+  const access = await requireWorkspace();
+  if (!access.ok) return access;
+  if (!canWriteWorkspace(access.workspace)) {
+    return {
+      ok: false,
+      message: "You have read-only access to this workspace.",
+    };
+  }
+  return access;
+}
+
+export async function requireWorkspaceOwner(): Promise<
+  { ok: true; workspace: CurrentWorkspace } | { ok: false; message: string }
+> {
+  const access = await requireWorkspace();
+  if (!access.ok) return access;
+  if (!canManageMembers(access.workspace)) {
+    return {
+      ok: false,
+      message: "Only the workspace owner can manage members.",
+    };
+  }
+  return access;
 }
 
 /** Planogram lookup scoped to workspace — cross-workspace → null (treat as NOT_FOUND). */

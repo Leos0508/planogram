@@ -71,7 +71,7 @@ test.describe("authenticated smoke", () => {
     await expect(page.getByRole("heading", { name: /skus/i })).toBeVisible();
   });
 
-  test("settings stubs are reachable from user menu", async ({ page }) => {
+  test("settings pages are reachable from user menu", async ({ page }) => {
     await page.goto("/planograms");
     await page
       .getByRole("navigation")
@@ -82,9 +82,29 @@ test.describe("authenticated smoke", () => {
     await expect(page.getByRole("heading", { name: "Workspace" })).toBeVisible();
     await page.getByRole("complementary").getByRole("link", { name: "Members" }).click();
     await expect(page).toHaveURL(/\/settings\/members$/);
-    await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Members" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Create invite link|Copy link/ }),
+    ).toBeVisible();
     await page.getByRole("complementary").getByRole("link", { name: "Account" }).click();
     await expect(page).toHaveURL(/\/settings\/account$/);
     await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
+  });
+
+  test("owner can create an invite link on members settings", async ({
+    page,
+  }) => {
+    await page.goto("/settings/members");
+    await expect(page.getByRole("heading", { level: 1, name: "Members" })).toBeVisible();
+
+    const createButton = page.getByRole("button", { name: "Create invite link" });
+    const copyButton = page.getByRole("button", { name: "Copy link" });
+
+    if (await createButton.isVisible()) {
+      await createButton.click();
+    }
+
+    await expect(copyButton).toBeVisible();
+    await expect(page.locator("code")).toContainText("/invite/");
   });
 });
