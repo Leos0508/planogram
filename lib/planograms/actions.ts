@@ -7,7 +7,7 @@ import { validatePlanogramName } from "@/lib/planograms/validation";
 import {
   findPlanogramInWorkspace,
   findSkuInWorkspace,
-  requireWorkspace,
+  requireWorkspaceWrite,
 } from "@/lib/workspaces/current";
 import { revalidatePath } from "next/cache";
 
@@ -38,7 +38,7 @@ export async function placePlanogramItem(input: {
   facingsWide?: number;
 }): Promise<ActionResult<PlanogramItemRecord>> {
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await findPlanogramInWorkspace(
@@ -84,7 +84,7 @@ export async function removePlanogramItem(input: {
   itemId: string;
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await findPlanogramInWorkspace(
@@ -121,7 +121,7 @@ export async function updatePlanogramItemPosition(input: {
   y: number;
 }): Promise<ActionResult<PlanogramItemRecord>> {
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await findPlanogramInWorkspace(
@@ -168,7 +168,7 @@ export async function updatePlanogramItemFacings(input: {
   facingsWide: number;
 }): Promise<ActionResult<PlanogramItemRecord>> {
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await findPlanogramInWorkspace(
@@ -246,7 +246,7 @@ export async function createPlanogram(input: {
   }
 
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await prisma.planogram.create({
@@ -291,7 +291,7 @@ export async function updatePlanogram(input: {
   }
 
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const existing = await findPlanogramInWorkspace(
@@ -322,7 +322,7 @@ export async function deletePlanogram(input: {
   id: string;
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await prisma.planogram.findFirst({
@@ -353,7 +353,7 @@ export async function addPlanogramShelf(input: {
   planogramId: string;
 }): Promise<ActionResult<PlanogramShelfRecord>> {
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await prisma.planogram.findFirst({
@@ -396,7 +396,7 @@ export async function updatePlanogramShelfMinHeight(input: {
   }
 
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await findPlanogramInWorkspace(
@@ -434,7 +434,7 @@ export async function updatePlanogramShelfMinWidth(input: {
   }
 
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await findPlanogramInWorkspace(
@@ -466,7 +466,7 @@ export async function removePlanogramShelf(input: {
   shelfId: string;
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const planogram = await findPlanogramInWorkspace(

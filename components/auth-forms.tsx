@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { login, register, type AuthActionState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -21,11 +22,27 @@ function AuthError({ message }: { message?: string }) {
   );
 }
 
+function useSafeCallbackUrl() {
+  const searchParams = useSearchParams();
+  const raw = searchParams.get("callbackUrl");
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
+    return null;
+  }
+  return raw;
+}
+
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initialState);
+  const callbackUrl = useSafeCallbackUrl();
+  const registerHref = callbackUrl
+    ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : "/register";
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
+      {callbackUrl ? (
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
+      ) : null}
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -52,7 +69,10 @@ export function LoginForm() {
       </Button>
       <p className="text-sm text-muted-foreground">
         No account?{" "}
-        <Link href="/register" className="text-foreground underline-offset-4 hover:underline">
+        <Link
+          href={registerHref}
+          className="text-foreground underline-offset-4 hover:underline"
+        >
           Register
         </Link>
       </p>
@@ -62,9 +82,16 @@ export function LoginForm() {
 
 export function RegisterForm() {
   const [state, formAction, pending] = useActionState(register, initialState);
+  const callbackUrl = useSafeCallbackUrl();
+  const loginHref = callbackUrl
+    ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : "/login";
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
+      {callbackUrl ? (
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
+      ) : null}
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Name</Label>
         <Input
@@ -101,7 +128,10 @@ export function RegisterForm() {
       </Button>
       <p className="text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
+        <Link
+          href={loginHref}
+          className="text-foreground underline-offset-4 hover:underline"
+        >
           Sign in
         </Link>
       </p>

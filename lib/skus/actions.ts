@@ -5,7 +5,7 @@ import type { ActionResult } from "@/lib/result";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
 import {
   findSkuInWorkspace,
-  requireWorkspace,
+  requireWorkspaceWrite,
 } from "@/lib/workspaces/current";
 import { revalidatePath } from "next/cache";
 
@@ -72,7 +72,7 @@ export async function createSku(input: {
   if (error) return { ok: false, message: error };
 
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const created = await prisma.sKU.create({
@@ -110,7 +110,7 @@ export async function updateSku(input: {
   if (error) return { ok: false, message: error };
 
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const existing = await findSkuInWorkspace(input.id, access.workspace.id);
@@ -143,7 +143,7 @@ export async function deleteSku(input: {
   id: string;
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const access = await requireWorkspace();
+    const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
     const sku = await prisma.sKU.findFirst({
