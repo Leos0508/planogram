@@ -53,3 +53,4 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 - Roadmap / backlog: [Linear — Planogram](https://linear.app/planogram/project/planogram)
 - Design system: [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)
 - Workspace migration: [`docs/WORKSPACE_MIGRATION.md`](docs/WORKSPACE_MIGRATION.md)
+- Workspace tenancy manual tests: [`docs/WORKSPACE_TENANCY_TEST.md`](docs/WORKSPACE_TENANCY_TEST.md)

@@ -3,8 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
-import { requireSessionUser } from "@/lib/auth/session";
-import { getPrimaryWorkspaceId } from "@/lib/workspaces/bootstrap";
+import {
+  findSkuInWorkspace,
+  requireWorkspace,
+} from "@/lib/workspaces/current";
 import { revalidatePath } from "next/cache";
 
 export type SkuRecord = {
@@ -70,14 +72,12 @@ export async function createSku(input: {
   if (error) return { ok: false, message: error };
 
   try {
-    const session = await requireSessionUser();
-    if (!session.ok) return { ok: false, message: session.message };
-
-    const workspaceId = await getPrimaryWorkspaceId(prisma, session.user);
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
 
     const created = await prisma.sKU.create({
       data: {
-        workspaceId,
+        workspaceId: access.workspace.id,
         name: input.name.trim(),
         sku: input.sku.trim(),
         width: Math.round(input.width),
@@ -110,7 +110,10 @@ export async function updateSku(input: {
   if (error) return { ok: false, message: error };
 
   try {
-    const existing = await prisma.sKU.findUnique({ where: { id: input.id } });
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const existing = await findSkuInWorkspace(input.id, access.workspace.id);
     if (!existing) return { ok: false, message: "SKU not found" };
 
     const updated = await prisma.sKU.update({
@@ -140,8 +143,11 @@ export async function deleteSku(input: {
   id: string;
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const sku = await prisma.sKU.findUnique({
-      where: { id: input.id },
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const sku = await prisma.sKU.findFirst({
+      where: { id: input.id, workspaceId: access.workspace.id },
       include: { _count: { select: { planogramItems: true } } },
     });
 
