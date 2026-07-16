@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
 import { validatePlanogramName } from "@/lib/planograms/validation";
+import { requireSessionUser } from "@/lib/auth/session";
+import { getPrimaryWorkspaceId } from "@/lib/workspaces/bootstrap";
 import { revalidatePath } from "next/cache";
 
 export type PlanogramItemRecord = {
@@ -207,8 +209,14 @@ export async function createPlanogram(input: {
   }
 
   try {
+    const session = await requireSessionUser();
+    if (!session.ok) return { ok: false, message: session.message };
+
+    const workspaceId = await getPrimaryWorkspaceId(prisma, session.user);
+
     const planogram = await prisma.planogram.create({
       data: {
+        workspaceId,
         name,
         topClearance: Math.round(topClearance),
         stackGap: Math.round(stackGap),
