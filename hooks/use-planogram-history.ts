@@ -181,4 +181,17 @@ export function setShelfMinContentHeightInState(
   };
 }
 
+export function setShelfMinContentWidthInState(
+  state: PlanogramState,
+  shelfId: string,
+  minContentWidthMm: number,
+): PlanogramState {
+  return {
+    ...state,
+    shelves: state.shelves.map((shelf) =>
+      shelf.id === shelfId ? { ...shelf, minContentWidthMm } : shelf,
+    ),
+  };
+}
+
 export type { PlanogramHistoryEntry };

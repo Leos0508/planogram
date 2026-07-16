@@ -31,6 +31,8 @@ export type PlanogramShelf = {
   index: number;
   /** User-set minimum item-area height (mm). */
   minContentHeightMm: number;
+  /** User-set minimum fixture width (mm). Drag right edge to resize. */
+  minContentWidthMm: number;
   /** Shelf line Y in mm — derived from stacked layout. */
   yMm: number;
   items: PlanogramItem[];

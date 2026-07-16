@@ -217,6 +217,7 @@ export type PlanogramShelfRecord = {
   planogramId: string;
   index: number;
   minContentHeightMm: number;
+  minContentWidthMm: number;
 };
 
 const DEFAULT_SHELF_COUNT = 3;
@@ -419,6 +420,44 @@ export async function updatePlanogramShelfMinHeight(input: {
   } catch (error) {
     console.error("[updatePlanogramShelfMinHeight]", error);
     return { ok: false, message: "Failed to update shelf height" };
+  }
+}
+
+export async function updatePlanogramShelfMinWidth(input: {
+  planogramId: string;
+  shelfId: string;
+  minContentWidthMm: number;
+}): Promise<ActionResult<PlanogramShelfRecord>> {
+  const minContentWidthMm = Math.round(input.minContentWidthMm);
+  if (minContentWidthMm < 1) {
+    return { ok: false, message: "Shelf width must be at least 1 mm" };
+  }
+
+  try {
+    const access = await requireWorkspace();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const planogram = await findPlanogramInWorkspace(
+      input.planogramId,
+      access.workspace.id,
+    );
+    if (!planogram) return { ok: false, message: "Planogram not found" };
+
+    const shelf = await prisma.planogramShelf.findFirst({
+      where: { id: input.shelfId, planogramId: input.planogramId },
+    });
+    if (!shelf) return { ok: false, message: "Shelf not found" };
+
+    const updated = await prisma.planogramShelf.update({
+      where: { id: input.shelfId },
+      data: { minContentWidthMm },
+    });
+
+    revalidatePath(`/planograms/${input.planogramId}`);
+    return { ok: true, data: updated };
+  } catch (error) {
+    console.error("[updatePlanogramShelfMinWidth]", error);
+    return { ok: false, message: "Failed to update shelf width" };
   }
 }
 

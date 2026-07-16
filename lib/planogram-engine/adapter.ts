@@ -13,6 +13,7 @@ export function planogramDetailToState(detail: PlanogramDetail): PlanogramState 
       id: shelf.id,
       index: shelf.index,
       minContentHeightMm: shelf.minContentHeightMm,
+      minContentWidthMm: shelf.minContentWidthMm,
       yMm: 0,
       items: shelf.items.map((item) => ({
         id: item.id,

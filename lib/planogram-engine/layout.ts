@@ -77,12 +77,62 @@ export function minContentHeightFloorMm(items: PlanogramItem[]): number {
   return Math.max(MIN_SHELF_CONTENT_HEIGHT_MM, maxReach);
 }
 
+/** Rightmost item extent on a shelf (mm); 0 when empty. */
+export function shelfMaxRightMm(
+  items: PlanogramItem[],
+  previewItem?: Pick<PlanogramItem, "x" | "width" | "facingsWide">,
+): number {
+  let maxRight = 0;
+
+  for (const item of items) {
+    maxRight = Math.max(maxRight, item.x + itemFootprintWidth(item));
+  }
+
+  if (previewItem) {
+    maxRight = Math.max(maxRight, previewItem.x + itemFootprintWidth(previewItem));
+  }
+
+  return maxRight;
+}
+
+/**
+ * Fixture/content width for one shelf: max(minContentWidthMm, item extents).
+ * Empty shelves use the configured minimum (default 200 mm).
+ */
+export function shelfFixtureWidthMm(
+  shelf: Pick<PlanogramShelf, "minContentWidthMm" | "items">,
+  previewItem?: Pick<PlanogramItem, "x" | "width" | "facingsWide">,
+): number {
+  const maxRight = shelfMaxRightMm(shelf.items, previewItem);
+  return Math.max(shelf.minContentWidthMm, maxRight);
+}
+
+/** Lowest allowed minContentWidthMm for a shelf (items must still fit). */
+export function minContentWidthFloorMm(items: PlanogramItem[]): number {
+  return Math.max(MIN_SHELF_WIDTH_MM, shelfMaxRightMm(items));
+}
+
 /** Max vertical reach (y + height) allowed for placement on a shelf. */
 export function shelfContentBandMm(
   items: PlanogramItem[],
   minContentHeightMm = MIN_SHELF_CONTENT_HEIGHT_MM,
 ): number {
   return itemAreaHeightMm(items, minContentHeightMm);
+}
+
+/** Max horizontal extent allowed for placement on a shelf. */
+export function shelfContentBandWidthMm(
+  shelf: Pick<PlanogramShelf, "minContentWidthMm" | "items">,
+  excludeItemId?: string,
+): number {
+  const items =
+    excludeItemId === undefined
+      ? shelf.items
+      : shelf.items.filter((item) => item.id !== excludeItemId);
+  return shelfFixtureWidthMm({
+    minContentWidthMm: shelf.minContentWidthMm,
+    items,
+  });
 }
 
 /** Stack shelf rows: [topClearance] [item area] [shelf line] → repeat. */
@@ -139,25 +189,29 @@ export function computeItemRect(
   };
 }
 
-/** Shelf width from placed item extents (includes preview candidate when present). */
+/** Shelf width from per-shelf fixtures and item extents (includes preview). */
 export function computeContentWidthMm(
   shelves: PlanogramShelf[],
-  previewItem?: Pick<PlanogramItem, "x" | "width" | "facingsWide">,
+  previewItem?: Pick<PlanogramItem, "x" | "width" | "facingsWide"> & {
+    shelfId?: string;
+  },
   minWidth = MIN_SHELF_WIDTH_MM,
 ): number {
-  let maxRight = 0;
+  let maxWidth = minWidth;
 
   for (const shelf of shelves) {
-    for (const item of shelf.items) {
-      maxRight = Math.max(maxRight, item.x + itemFootprintWidth(item));
-    }
+    const previewForShelf =
+      previewItem &&
+      (previewItem.shelfId === undefined || previewItem.shelfId === shelf.id)
+        ? previewItem
+        : undefined;
+    maxWidth = Math.max(
+      maxWidth,
+      shelfFixtureWidthMm(shelf, previewForShelf),
+    );
   }
 
-  if (previewItem) {
-    maxRight = Math.max(maxRight, previewItem.x + itemFootprintWidth(previewItem));
-  }
-
-  return maxRight > 0 ? maxRight : minWidth;
+  return maxWidth;
 }
 
 function computeBounds(
@@ -250,7 +304,14 @@ export function computePlanogramLayout(
 
   const contentWidthMm = computeContentWidthMm(
     state.shelves,
-    previewItem,
+    previewItem
+      ? {
+          x: previewItem.x,
+          width: previewItem.width,
+          facingsWide: previewItem.facingsWide,
+          shelfId: previewItem.shelfId,
+        }
+      : undefined,
   );
 
   return {

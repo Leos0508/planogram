@@ -16,6 +16,7 @@ function layoutCacheKey(
       id: shelf.id,
       index: shelf.index,
       minContentHeightMm: shelf.minContentHeightMm,
+      minContentWidthMm: shelf.minContentWidthMm,
       items: shelf.items.map((item) => ({
         id: item.id,
         shelfId: item.shelfId,
