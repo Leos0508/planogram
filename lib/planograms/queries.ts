@@ -70,21 +70,22 @@ export type PlanogramDetail = {
   name: string;
   topClearance: number;
   stackGap: number;
-  shelves: Array<{
-    id: string;
-    index: number;
-    minContentHeightMm: number;
-    items: Array<{
+    shelves: Array<{
       id: string;
-      skuId: string;
-      x: number;
-      width: number;
-      height: number;
-      y: number;
-      facingsWide: number;
+      index: number;
+      minContentHeightMm: number;
+      minContentWidthMm: number;
+      items: Array<{
+        id: string;
+        skuId: string;
+        x: number;
+        width: number;
+        height: number;
+        y: number;
+        facingsWide: number;
+      }>;
     }>;
-  }>;
-};
+  };
 
 export async function getPlanogram(
   id: string,
@@ -140,6 +141,7 @@ export async function getPlanogram(
           id: shelf.id,
           index: shelf.index,
           minContentHeightMm: shelf.minContentHeightMm,
+          minContentWidthMm: shelf.minContentWidthMm,
           items: shelf.planogramShelfItems,
         })),
       },

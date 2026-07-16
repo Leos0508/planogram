@@ -16,6 +16,7 @@ function baseState(
         id: "s1",
         index: 0,
         minContentHeightMm: 500,
+        minContentWidthMm: 200,
         yMm: 0,
         items,
       },
@@ -179,6 +180,7 @@ describe("canPlace", () => {
       },
     ]);
     state.shelves[0].minContentHeightMm = 800;
+    state.shelves[0].minContentWidthMm = 400;
 
     const result = canPlace(
       {
@@ -211,6 +213,7 @@ describe("canPlace", () => {
         facingsWide: 1,
       },
     ]);
+    state.shelves[0].minContentWidthMm = 400;
 
     const blocked = canPlace(
       {
@@ -245,6 +248,53 @@ describe("canPlace", () => {
       state.config,
     );
     expect(allowed.ok).toBe(true);
+  });
+
+  it("rejects placement past fixture width (OUT_OF_BAND)", () => {
+    const state = baseState();
+    state.shelves[0].minContentWidthMm = 200;
+
+    const result = canPlace(
+      {
+        id: "preview",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 50,
+        width: 100,
+        height: 200,
+        y: 0,
+        facingsWide: 2,
+      },
+      "s1",
+      state.shelves,
+      state.config,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("OUT_OF_BAND");
+    }
+  });
+
+  it("allows wider placement after minContentWidthMm is increased", () => {
+    const state = baseState();
+    state.shelves[0].minContentWidthMm = 400;
+
+    const result = canPlace(
+      {
+        id: "preview",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 50,
+        width: 100,
+        height: 200,
+        y: 0,
+        facingsWide: 2,
+      },
+      "s1",
+      state.shelves,
+      state.config,
+    );
+    expect(result.ok).toBe(true);
   });
 });
 

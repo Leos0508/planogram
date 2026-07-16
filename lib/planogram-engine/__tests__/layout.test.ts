@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { computePlanogramLayout, computeShelfPositions } from "../layout";
+import {
+  computePlanogramLayout,
+  computeShelfPositions,
+  minContentWidthFloorMm,
+} from "../layout";
 import type { PlanogramState } from "../types";
 
 const DEFAULT_MIN_CONTENT_HEIGHT_MM = 500;
@@ -13,6 +17,7 @@ function baseState(items: PlanogramState["shelves"][number]["items"] = []) {
         id: "s1",
         index: 0,
         minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM,
+        minContentWidthMm: 200,
         yMm: 0,
         items,
       },
@@ -80,8 +85,8 @@ describe("computePlanogramLayout", () => {
       id: "p1",
       config: { topClearance: 100, stackGap: 10 },
       shelves: [
-        { id: "s1", index: 0, minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM, yMm: 0, items: [] },
-        { id: "s2", index: 1, minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM, yMm: 0, items: [] },
+        { id: "s1", index: 0, minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM, minContentWidthMm: 200, yMm: 0, items: [] },
+        { id: "s2", index: 1, minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM, minContentWidthMm: 200, yMm: 0, items: [] },
       ],
     });
 
@@ -92,7 +97,7 @@ describe("computePlanogramLayout", () => {
 describe("computeShelfPositions", () => {
   it("places first shelf line after clearance and min content height", () => {
     const positioned = computeShelfPositions(
-      [{ id: "s1", index: 0, minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM, yMm: 0, items: [] }],
+      [{ id: "s1", index: 0, minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM, minContentWidthMm: 200, yMm: 0, items: [] }],
       { topClearance: 100, stackGap: 10 },
     );
     expect(positioned[0].yMm).toBe(600);
@@ -105,6 +110,7 @@ describe("computeShelfPositions", () => {
           id: "s1",
           index: 0,
           minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM,
+          minContentWidthMm: 200,
           yMm: 0,
           items: [
             {
@@ -164,7 +170,7 @@ describe("computeShelfPositions", () => {
     const state = {
       id: "p1",
       config,
-      shelves: [{ id: "s1", index: 0, minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM, yMm: 0, items }],
+      shelves: [{ id: "s1", index: 0, minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM, minContentWidthMm: 200, yMm: 0, items }],
     } satisfies PlanogramState;
 
     const layout = computePlanogramLayout(state);
@@ -183,5 +189,70 @@ describe("computeShelfPositions", () => {
     const layout = computePlanogramLayout(state);
     expect(layout.shelves[0].contentHeightMm).toBe(800);
     expect(layout.shelves[0].yMm).toBe(900);
+  });
+
+  it("uses minContentWidthMm when empty shelf is configured wider", () => {
+    const state = baseState();
+    state.shelves[0].minContentWidthMm = 800;
+
+    const layout = computePlanogramLayout(state);
+    expect(layout.contentWidthMm).toBe(800);
+  });
+
+  it("does not shrink below rightmost item when computing width", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 100,
+        width: 100,
+        height: 200,
+        y: 0,
+        facingsWide: 1,
+      },
+    ]);
+    state.shelves[0].minContentWidthMm = 150;
+
+    const layout = computePlanogramLayout(state);
+    expect(layout.contentWidthMm).toBe(200);
+  });
+
+  it("takes the max fixture width across shelves", () => {
+    const state = baseState();
+    state.shelves.push({
+      id: "s2",
+      index: 1,
+      minContentHeightMm: DEFAULT_MIN_CONTENT_HEIGHT_MM,
+      minContentWidthMm: 600,
+      yMm: 0,
+      items: [],
+    });
+
+    const layout = computePlanogramLayout(state);
+    expect(layout.contentWidthMm).toBe(600);
+  });
+});
+
+describe("minContentWidthFloorMm", () => {
+  it("floors at MIN_SHELF_WIDTH_MM when empty", () => {
+    expect(minContentWidthFloorMm([])).toBe(200);
+  });
+
+  it("floors at rightmost item extent", () => {
+    expect(
+      minContentWidthFloorMm([
+        {
+          id: "i1",
+          shelfId: "s1",
+          skuId: "sku1",
+          x: 50,
+          width: 100,
+          height: 200,
+          y: 0,
+          facingsWide: 2,
+        },
+      ]),
+    ).toBe(250);
   });
 });

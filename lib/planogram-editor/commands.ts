@@ -10,6 +10,7 @@ export const EDITOR_COMMANDS: EditorCommand[] = [
   { action: "Move item", keys: "Drag item" },
   { action: "Float (no Y snap)", keys: "Alt while dragging" },
   { action: "Resize shelf height", keys: "Drag shelf top border" },
+  { action: "Resize shelf width", keys: "Drag shelf right edge" },
   { action: "Increase facings", keys: "3" },
   { action: "Decrease facings", keys: "Shift + 3" },
   { action: "Nudge item", keys: "← →" },

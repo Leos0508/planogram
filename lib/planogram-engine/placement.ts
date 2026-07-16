@@ -3,7 +3,9 @@ import {
   positionedShelves,
   previewItemId,
   shelfContentBandMm,
+  shelfContentBandWidthMm,
 } from "./layout";
+import { itemFootprintWidth } from "./facings";
 import type {
   CanPlaceResult,
   PlanogramConfig,
@@ -44,6 +46,17 @@ export function canPlace(
     return { ok: false, reason: "OUT_OF_BAND" };
   }
 
+  const bandWidthMm = shelfContentBandWidthMm({
+    minContentWidthMm: shelf.minContentWidthMm,
+    items: committedItems,
+  });
+  if (
+    candidateWithId.x + itemFootprintWidth(candidateWithId) >
+    bandWidthMm
+  ) {
+    return { ok: false, reason: "OUT_OF_BAND" };
+  }
+
   const positioned = positionedShelves(shelves, config, {
     shelfId,
     item: candidateWithId,
@@ -60,10 +73,7 @@ export function canPlace(
       return false;
     }
 
-    const itemRect = computeItemRectOnShelf(
-      item,
-      positionedShelf,
-    );
+    const itemRect = computeItemRectOnShelf(item, positionedShelf);
 
     return rectsOverlap(previewRect, itemRect);
   });

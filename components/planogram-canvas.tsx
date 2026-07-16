@@ -3,6 +3,7 @@
 import { mmToPx, CANVAS_LABEL_PADDING_PX, itemFacingsWide } from "@/lib/planogram-engine";
 import type { PlanogramDragState } from "@/hooks/use-planogram-drag";
 import type { ShelfResizeState } from "@/hooks/use-shelf-resize";
+import type { ShelfWidthResizeState } from "@/hooks/use-shelf-width-resize";
 import type { PlanogramLayout, PlanogramState } from "@/lib/planogram-engine";
 import type { Sku } from "@/lib/skus/queries";
 import { useMemo } from "react";
@@ -22,10 +23,12 @@ export default function PlanogramCanvas({
   skuById,
   drag,
   shelfResize,
+  shelfWidthResize,
   selectedItemId,
   activeShelfId,
   onItemPointerDown,
   onShelfResizePointerDown,
+  onShelfWidthResizePointerDown,
   onCanvasPointerDown,
 }: {
   canvasRef: React.RefObject<HTMLDivElement | null>;
@@ -34,6 +37,7 @@ export default function PlanogramCanvas({
   skuById: Map<string, Sku>;
   drag: PlanogramDragState | null;
   shelfResize: ShelfResizeState | null;
+  shelfWidthResize: ShelfWidthResizeState | null;
   selectedItemId: string | null;
   activeShelfId?: string | null;
   onItemPointerDown: (
@@ -47,6 +51,10 @@ export default function PlanogramCanvas({
     event: React.PointerEvent,
   ) => void;
   onShelfResizePointerDown: (
+    shelfId: string,
+    event: React.PointerEvent,
+  ) => void;
+  onShelfWidthResizePointerDown: (
     shelfId: string,
     event: React.PointerEvent,
   ) => void;
@@ -111,7 +119,9 @@ export default function PlanogramCanvas({
           const contentTopPx = rowTopPx + clearancePx;
           const contentHeightPx = mmToPx(shelf.contentHeightMm);
           const isActive = activeShelfId === shelf.shelfId;
-          const isResizing = shelfResize?.shelfId === shelf.shelfId;
+          const isResizingHeight = shelfResize?.shelfId === shelf.shelfId;
+          const isResizingWidth = shelfWidthResize?.shelfId === shelf.shelfId;
+          const shelfLineY = toCanvasPxY(shelf.yMm, originY);
 
           return (
             <g key={shelf.shelfId}>
@@ -140,7 +150,7 @@ export default function PlanogramCanvas({
                 className="stroke-border/60"
                 strokeWidth={1}
               />
-              {/* Resize handle on shelf row top (outer top). */}
+              {/* Height resize handle on shelf row top (outer top). */}
               <rect
                 x={0}
                 y={rowTopPx - 4}
@@ -157,19 +167,42 @@ export default function PlanogramCanvas({
                 x2={shelfWidthPx}
                 y2={rowTopPx}
                 className={
-                  isResizing
+                  isResizingHeight
                     ? "stroke-[var(--canvas-valid)]"
                     : "stroke-border/40"
                 }
-                strokeWidth={isResizing ? 2 : 1}
+                strokeWidth={isResizingHeight ? 2 : 1}
               />
               <line
                 x1={0}
-                y1={toCanvasPxY(shelf.yMm, originY)}
+                y1={shelfLineY}
                 x2={shelfWidthPx}
-                y2={toCanvasPxY(shelf.yMm, originY)}
+                y2={shelfLineY}
                 className="stroke-border"
                 strokeWidth={2}
+              />
+              {/* Width resize handle on shelf right edge (v1 primary). */}
+              <rect
+                x={shelfWidthPx - 4}
+                y={rowTopPx}
+                width={8}
+                height={shelfLineY - rowTopPx}
+                className="cursor-ew-resize fill-transparent"
+                onPointerDown={(event) =>
+                  onShelfWidthResizePointerDown(shelf.shelfId, event)
+                }
+              />
+              <line
+                x1={shelfWidthPx}
+                y1={rowTopPx}
+                x2={shelfWidthPx}
+                y2={shelfLineY}
+                className={
+                  isResizingWidth
+                    ? "stroke-[var(--canvas-valid)]"
+                    : "stroke-border/40"
+                }
+                strokeWidth={isResizingWidth ? 2 : 1}
               />
             </g>
           );

@@ -12,6 +12,7 @@ import {
   type DragCommit,
 } from "@/hooks/use-planogram-drag";
 import { useShelfResize } from "@/hooks/use-shelf-resize";
+import { useShelfWidthResize } from "@/hooks/use-shelf-width-resize";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import {
   addItemToState,
@@ -20,6 +21,7 @@ import {
   setItemFacingsInState,
   setItemsPositionsInState,
   setShelfMinContentHeightInState,
+  setShelfMinContentWidthInState,
   usePlanogramHistory,
   type PlanogramHistoryEntry,
 } from "@/hooks/use-planogram-history";
@@ -41,6 +43,7 @@ import {
   updatePlanogramItemFacings,
   updatePlanogramItemPosition,
   updatePlanogramShelfMinHeight,
+  updatePlanogramShelfMinWidth,
 } from "@/lib/planograms/actions";
 import type { PlanogramDetail } from "@/lib/planograms/queries";
 import { planogramStructureKey } from "@/lib/planogram-editor/sync-key";
@@ -504,6 +507,33 @@ export default function PlanogramEditor({
     [planogram.id, toast],
   );
 
+  const persistShelfWidthResize = useCallback(
+    async (shelfId: string, minContentWidthMm: number) => {
+      const shelf = stateRef.current.shelves.find((row) => row.id === shelfId);
+      if (!shelf || shelf.minContentWidthMm === minContentWidthMm) return;
+
+      const from = shelf.minContentWidthMm;
+      setState((prev) =>
+        setShelfMinContentWidthInState(prev, shelfId, minContentWidthMm),
+      );
+
+      const response = await updatePlanogramShelfMinWidth({
+        planogramId: planogram.id,
+        shelfId,
+        minContentWidthMm,
+      });
+
+      if (!response.ok) {
+        setState((prev) =>
+          setShelfMinContentWidthInState(prev, shelfId, from),
+        );
+        console.error("[updatePlanogramShelfMinWidth]", response.message);
+        toast.error(response.message);
+      }
+    },
+    [planogram.id, toast],
+  );
+
   const { drag, startDrag, startItemDrag, cancelDrag } = usePlanogramDrag({
     clientToCanvasLocal,
     state,
@@ -518,14 +548,33 @@ export default function PlanogramEditor({
     onCommit: persistShelfResize,
   });
 
+  const {
+    resize: shelfWidthResize,
+    startResize: startShelfWidthResize,
+  } = useShelfWidthResize({
+    clientToCanvasLocal,
+    state,
+    onCommit: persistShelfWidthResize,
+  });
+
   const displayState = useMemo(() => {
-    if (!shelfResize) return state;
-    return setShelfMinContentHeightInState(
-      state,
-      shelfResize.shelfId,
-      shelfResize.minContentHeightMm,
-    );
-  }, [state, shelfResize]);
+    let next = state;
+    if (shelfResize) {
+      next = setShelfMinContentHeightInState(
+        next,
+        shelfResize.shelfId,
+        shelfResize.minContentHeightMm,
+      );
+    }
+    if (shelfWidthResize) {
+      next = setShelfMinContentWidthInState(
+        next,
+        shelfWidthResize.shelfId,
+        shelfWidthResize.minContentWidthMm,
+      );
+    }
+    return next;
+  }, [state, shelfResize, shelfWidthResize]);
 
   const applyShelfLayout = useCallback(
     async (mode: ShelfLayoutMode) => {
@@ -837,10 +886,12 @@ export default function PlanogramEditor({
           skuById={skuById}
           drag={drag}
           shelfResize={shelfResize}
+          shelfWidthResize={shelfWidthResize}
           selectedItemId={selectedItemId}
           activeShelfId={activeShelfId}
           onItemPointerDown={handleItemPointerDown}
           onShelfResizePointerDown={startShelfResize}
+          onShelfWidthResizePointerDown={startShelfWidthResize}
           onCanvasPointerDown={() => setSelectedItemId(null)}
         />
       </PlanogramViewport>
