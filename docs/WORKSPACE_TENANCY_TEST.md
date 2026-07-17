@@ -1,6 +1,6 @@
 # Workspace tenancy — manual test plan
 
-Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` → oldest membership. Invite accept does **not** switch active (stay on previous workspace until switcher / `setActiveWorkspace`).
+Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` → oldest membership. Invite accept does **not** switch active (stay on previous workspace until switcher / `setActiveWorkspace`). Navbar switcher is **PLA-45**.
 
 ## Setup
 
@@ -18,12 +18,14 @@ Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` →
 | User A places SKU on planogram | Works |
 | User B cannot mutate A’s planogram via editor actions | Action returns “Planogram not found” / “SKU not found” |
 
-## Active workspace (PLA-43)
+## Active workspace (PLA-43 / PLA-45)
 
 | Step | Expected |
 |------|----------|
 | User A accepts invite to User B’s workspace | Membership added; A’s catalogs still show A’s personal workspace |
-| Call `setActiveWorkspace` for B’s workspace (or switcher later) | A sees B’s planograms/SKUs only |
+| Navbar with one membership | Workspace name shown (no switcher menu) |
+| Navbar with ≥2 memberships | Switcher control; pick other workspace → catalogs refresh |
+| Switch while on `/planograms/[id]` | Redirects to `/planograms` for the new workspace |
 | Clear cookie but keep `User.activeWorkspaceId` | Still resolves to that workspace |
 | Invalid cookie / DB id (left a workspace) | Falls back to oldest remaining membership |
 

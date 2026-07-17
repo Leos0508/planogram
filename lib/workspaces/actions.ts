@@ -45,6 +45,7 @@ export async function setActiveWorkspace(input: {
 
     await writeActiveWorkspaceCookie(workspaceId);
 
+    revalidatePath("/", "layout");
     revalidatePath("/planograms");
     revalidatePath("/skus");
     revalidatePath("/settings");
