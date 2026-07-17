@@ -1,5 +1,7 @@
-import { WorkspaceRole } from "@/generated/prisma/client";
+import { WorkspaceRole } from "@/generated/prisma/enums";
+import LeaveWorkspaceSection from "@/components/leave-workspace-section";
 import WorkspaceSettingsForm from "@/components/workspace-settings-form";
+import { prisma } from "@/lib/prisma";
 import { requireWorkspace } from "@/lib/workspaces/current";
 import { redirect } from "next/navigation";
 
@@ -9,7 +11,11 @@ export default async function SettingsWorkspacePage() {
     redirect("/login");
   }
 
-  const canEdit = access.workspace.role === WorkspaceRole.OWNER;
+  const isOwner = access.workspace.role === WorkspaceRole.OWNER;
+  const memberCount = await prisma.workspaceMember.count({
+    where: { workspaceId: access.workspace.id },
+  });
+  const otherMemberCount = Math.max(0, memberCount - 1);
 
   return (
     <div className="space-y-6">
@@ -23,7 +29,12 @@ export default async function SettingsWorkspacePage() {
       </div>
       <WorkspaceSettingsForm
         initialName={access.workspace.name}
-        canEdit={canEdit}
+        canEdit={isOwner}
+      />
+      <LeaveWorkspaceSection
+        workspaceName={access.workspace.name}
+        isOwner={isOwner}
+        otherMemberCount={otherMemberCount}
       />
     </div>
   );

@@ -26,6 +26,9 @@ Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` →
 | Navbar workspace control | Menu lists memberships + **Create workspace** |
 | Create workspace | Dialog → new empty OWNER workspace becomes active; catalogs empty |
 | Soft-cap (3 owned) | Fourth create shows clear free-plan limit error |
+| Leave as MEMBER (`/settings`) | Confirm → membership removed; switches to another WS |
+| Leave as sole OWNER | Confirm → workspace deleted; personal/other WS becomes active |
+| Leave as OWNER with others | Blocked; link to Members to transfer first |
 | Switch while on `/planograms/[id]` | Redirects to `/planograms` for the new workspace |
 | Clear cookie but keep `User.activeWorkspaceId` | Still resolves to that workspace |
 | Invalid cookie / DB id (left a workspace) | Falls back to oldest remaining membership |

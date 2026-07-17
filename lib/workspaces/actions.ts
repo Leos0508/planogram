@@ -5,13 +5,13 @@ import { WorkspaceRole, WorkspaceTier } from "@/generated/prisma/client";
 import type { ActionResult } from "@/lib/result";
 import { requireSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { validateWorkspaceName } from "@/lib/settings/validation";
 import { slugifyWorkspaceName } from "@/lib/workspaces/bootstrap";
 import { writeActiveWorkspaceCookie } from "@/lib/workspaces/cookie";
 import {
   canOwnAnotherWorkspace,
   ownedWorkspaceLimitMessage,
 } from "@/lib/workspaces/limits";
-import { validateWorkspaceName } from "@/lib/settings/validation";
 
 async function persistActiveWorkspace(
   userId: string,
