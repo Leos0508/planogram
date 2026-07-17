@@ -1,4 +1,5 @@
 import { WorkspaceRole } from "@/generated/prisma/enums";
+import DeleteWorkspaceSection from "@/components/delete-workspace-section";
 import LeaveWorkspaceSection from "@/components/leave-workspace-section";
 import WorkspaceSettingsForm from "@/components/workspace-settings-form";
 import { prisma } from "@/lib/prisma";
@@ -36,6 +37,12 @@ export default async function SettingsWorkspacePage() {
         isOwner={isOwner}
         otherMemberCount={otherMemberCount}
       />
+      {isOwner ? (
+        <DeleteWorkspaceSection
+          workspaceName={access.workspace.name}
+          otherMemberCount={otherMemberCount}
+        />
+      ) : null}
     </div>
   );
 }
