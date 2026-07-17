@@ -1,7 +1,4 @@
-import {
-  WorkspaceRole,
-  WorkspaceTier,
-} from "@/generated/prisma/client";
+import { WorkspaceRole, WorkspaceTier } from "@/generated/prisma/enums";
 
 /** Free tier planogram cap (Plan 01 D28). */
 export const MAX_FREE_PLANOGRAMS = 20;
