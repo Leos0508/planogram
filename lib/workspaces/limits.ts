@@ -1,3 +1,5 @@
+import { WorkspaceRole } from "@/generated/prisma/enums";
+
 /** Soft cap on how many workspaces a user may own before S5 billing. */
 export const MAX_OWNED_WORKSPACES_SOFT = 3;
 
@@ -12,4 +14,11 @@ export function ownedWorkspaceLimitMessage(
   limit: number = MAX_OWNED_WORKSPACES_SOFT,
 ): string {
   return `You can own at most ${limit} workspaces on the free plan.`;
+}
+
+/** Count OWNER memberships (used to preempt create in the switcher). */
+export function countOwnedWorkspaces(
+  memberships: ReadonlyArray<{ role: WorkspaceRole }>,
+): number {
+  return memberships.filter((m) => m.role === WorkspaceRole.OWNER).length;
 }

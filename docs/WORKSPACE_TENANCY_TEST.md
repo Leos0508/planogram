@@ -16,7 +16,8 @@ Run after multi-workspace changes when not relying on Playwright alone:
 4. Invite another user into the second WS → they keep their home active; optional switch works
 5. As OWNER with that member present → Leave/Delete blocked with link to Members
 6. Member leaves → OWNER can delete (type name) or leave-as-sole-owner deletes
-7. Soft-cap: fourth owned workspace shows free-plan limit (optional)
+7. Soft-cap: at 3 owned, **Create workspace** is disabled with inline reason (no dead-end dialog)
+8. Read-only MEMBER: catalogs/editor show hint; New/edit/delete/place controls disabled
 
 ## Setup
 
@@ -43,7 +44,8 @@ Run after multi-workspace changes when not relying on Playwright alone:
 | Accept with only one prior membership | Same stay + optional switch; no other memberships removed |
 | Navbar workspace control | Menu lists memberships + **Create workspace** |
 | Create workspace | Dialog → new empty OWNER workspace becomes active; catalogs empty |
-| Soft-cap (3 owned) | Fourth create shows clear free-plan limit error |
+| Soft-cap (3 owned) | **Create workspace** disabled in switcher with inline free-plan limit (server still enforces) |
+| Read-only MEMBER | Planograms/SKUs/editor: create/edit/delete disabled with read-only hint; view still works |
 | Leave as MEMBER (`/settings`) | Confirm → membership removed; switches to another WS |
 | Leave as sole OWNER | Confirm → workspace deleted; personal/other WS becomes active |
 | Leave as OWNER with others | Blocked; link to Members to transfer first |

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { createSku, deleteSku, updateSku } from "@/lib/skus/actions";
 import type { Sku } from "@/lib/skus/queries";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
+import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -143,7 +144,13 @@ function parseForm(values: SkuFormState) {
   };
 }
 
-export default function SkuManager({ skus }: { skus: Sku[] }) {
+export default function SkuManager({
+  skus,
+  canWrite,
+}: {
+  skus: Sku[];
+  canWrite: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +166,7 @@ export default function SkuManager({ skus }: { skus: Sku[] }) {
   };
 
   const handleCreate = (values: SkuFormState) => {
+    if (!canWrite) return;
     const parsed = parseForm(values);
     if (!parsed.ok) {
       setError(parsed.message);
@@ -178,7 +186,7 @@ export default function SkuManager({ skus }: { skus: Sku[] }) {
   };
 
   const handleUpdate = (values: SkuFormState) => {
-    if (!editingId) return;
+    if (!editingId || !canWrite) return;
 
     const parsed = parseForm(values);
     if (!parsed.ok) {
@@ -199,6 +207,7 @@ export default function SkuManager({ skus }: { skus: Sku[] }) {
   };
 
   const handleDelete = (sku: Sku) => {
+    if (!canWrite) return;
     if (!window.confirm(`Delete "${sku.name}"?`)) return;
 
     setError(null);
@@ -219,22 +228,28 @@ export default function SkuManager({ skus }: { skus: Sku[] }) {
         <h1 className="font-heading text-base font-semibold uppercase tracking-wider">
           SKUs
         </h1>
-        <Button
-          type="button"
-          variant={mode === "create" ? "secondary" : "default"}
-          size="sm"
-          onClick={() => {
-            setMode("create");
-            setEditingId(null);
-            setError(null);
-          }}
-        >
-          <PlusIcon className="size-4" />
-          New
-        </Button>
+        {canWrite ? (
+          <Button
+            type="button"
+            variant={mode === "create" ? "secondary" : "default"}
+            size="sm"
+            onClick={() => {
+              setMode("create");
+              setEditingId(null);
+              setError(null);
+            }}
+          >
+            <PlusIcon className="size-4" />
+            New
+          </Button>
+        ) : null}
       </div>
 
-      {mode === "create" ? (
+      {!canWrite ? (
+        <p className="text-sm text-muted-foreground">{WORKSPACE_READ_ONLY_HINT}</p>
+      ) : null}
+
+      {canWrite && mode === "create" ? (
         <SkuForm
           initial={emptyForm()}
           submitLabel="Create SKU"
@@ -244,7 +259,7 @@ export default function SkuManager({ skus }: { skus: Sku[] }) {
         />
       ) : null}
 
-      {mode === "edit" && editingSku ? (
+      {canWrite && mode === "edit" && editingSku ? (
         <SkuForm
           initial={{
             name: editingSku.name,
@@ -268,7 +283,9 @@ export default function SkuManager({ skus }: { skus: Sku[] }) {
 
       {skus.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No SKUs yet. Add products with width and height in millimeters.
+          {canWrite
+            ? "No SKUs yet. Add products with width and height in millimeters."
+            : "No SKUs in this workspace."}
         </p>
       ) : (
         <div className="overflow-x-auto border">
@@ -278,7 +295,9 @@ export default function SkuManager({ skus }: { skus: Sku[] }) {
                 <th className="px-4 py-2 font-semibold">Name</th>
                 <th className="px-4 py-2 font-semibold">Code</th>
                 <th className="px-4 py-2 font-semibold">Footprint (mm)</th>
-                <th className="px-4 py-2 font-semibold">Actions</th>
+                {canWrite ? (
+                  <th className="px-4 py-2 font-semibold">Actions</th>
+                ) : null}
               </tr>
             </thead>
             <tbody>
@@ -289,34 +308,36 @@ export default function SkuManager({ skus }: { skus: Sku[] }) {
                   <td className="px-4 py-3 font-mono text-xs">
                     {sku.width} × {sku.height}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        title={`Edit ${sku.name}`}
-                        disabled={pending}
-                        onClick={() => {
-                          setMode("edit");
-                          setEditingId(sku.id);
-                          setError(null);
-                        }}
-                      >
-                        <PencilIcon className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        title={`Delete ${sku.name}`}
-                        disabled={pending}
-                        onClick={() => handleDelete(sku)}
-                      >
-                        <Trash2Icon className="size-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </td>
+                  {canWrite ? (
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          title={`Edit ${sku.name}`}
+                          disabled={pending}
+                          onClick={() => {
+                            setMode("edit");
+                            setEditingId(sku.id);
+                            setError(null);
+                          }}
+                        >
+                          <PencilIcon className="size-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          title={`Delete ${sku.name}`}
+                          disabled={pending}
+                          onClick={() => handleDelete(sku)}
+                        >
+                          <Trash2Icon className="size-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
