@@ -10,9 +10,11 @@ import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import { isInvitationActive } from "@/lib/workspaces/capabilities";
 import {
+  getCurrentWorkspace,
   requireWorkspace,
   requireWorkspaceOwner,
 } from "@/lib/workspaces/current";
+import { shouldOfferSwitchToJoined } from "@/lib/members/invite";
 import { revalidatePath } from "next/cache";
 
 const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -248,14 +250,22 @@ export async function removeMember(input: {
   }
 }
 
+export type AcceptInviteResult = {
+  workspaceId: string;
+  workspaceName: string;
+  alreadyMember: boolean;
+  /** True when the joined workspace is already the user's active workspace. */
+  isJoinedActive: boolean;
+};
+
 /**
  * Join a workspace via invite token.
- * Does **not** change the active workspace (PLA-43) — catalogs stay on the
- * previous active until the user switches (PLA-45 / setActiveWorkspace).
+ * Adds membership without removing others. Does **not** change the active
+ * workspace (PLA-43 / PLA-48) — UI may offer an optional switch.
  */
 export async function acceptInvite(input: {
   token: string;
-}): Promise<ActionResult<{ workspaceId: string; workspaceName: string }>> {
+}): Promise<ActionResult<AcceptInviteResult>> {
   try {
     const access = await requireWorkspace();
     if (!access.ok) return { ok: false, message: access.message };
@@ -278,12 +288,19 @@ export async function acceptInvite(input: {
       },
     });
 
+    const isJoinedActive = !shouldOfferSwitchToJoined({
+      joinedWorkspaceId: invite.workspace.id,
+      activeWorkspaceId: access.workspace.id,
+    });
+
     if (existing) {
       return {
         ok: true,
         data: {
           workspaceId: invite.workspace.id,
           workspaceName: invite.workspace.name,
+          alreadyMember: true,
+          isJoinedActive,
         },
       };
     }
@@ -309,12 +326,16 @@ export async function acceptInvite(input: {
     revalidatePath("/settings/members");
     revalidatePath("/planograms");
     revalidatePath("/skus");
+    revalidatePath("/", "layout");
 
     return {
       ok: true,
       data: {
         workspaceId: invite.workspace.id,
         workspaceName: invite.workspace.name,
+        alreadyMember: false,
+        // Accept never auto-switches; active remains the pre-accept workspace.
+        isJoinedActive: false,
       },
     };
   } catch (error) {
@@ -325,9 +346,11 @@ export async function acceptInvite(input: {
 
 export async function getInvitePreview(token: string): Promise<
   ActionResult<{
+    workspaceId: string;
     workspaceName: string;
     expired: boolean;
     alreadyMember: boolean;
+    isJoinedActive: boolean;
   }>
 > {
   try {
@@ -343,6 +366,7 @@ export async function getInvitePreview(token: string): Promise<
 
     const active = isInvitationActive(invite);
     let alreadyMember = false;
+    let isJoinedActive = false;
 
     if (session.ok) {
       const membership = await prisma.workspaceMember.findUnique({
@@ -354,14 +378,26 @@ export async function getInvitePreview(token: string): Promise<
         },
       });
       alreadyMember = !!membership;
+
+      if (alreadyMember) {
+        const current = await getCurrentWorkspace();
+        isJoinedActive = current
+          ? !shouldOfferSwitchToJoined({
+              joinedWorkspaceId: invite.workspace.id,
+              activeWorkspaceId: current.id,
+            })
+          : false;
+      }
     }
 
     return {
       ok: true,
       data: {
+        workspaceId: invite.workspace.id,
         workspaceName: invite.workspace.name,
         expired: !active,
         alreadyMember,
+        isJoinedActive,
       },
     };
   } catch (error) {
