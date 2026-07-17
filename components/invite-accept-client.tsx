@@ -28,7 +28,9 @@ export default function InviteAcceptClient({
         toast.error(result.message);
         return;
       }
-      toast.success(`Joined ${result.data.workspaceName}`);
+      toast.success(
+        `Joined ${result.data.workspaceName}. Your active workspace is unchanged.`,
+      );
       router.push("/planograms");
       router.refresh();
     });

@@ -28,4 +28,4 @@ New users from `/register` get their own workspace; they are not added to legacy
 
 ## Follow-up
 
-Query/action scoping by current workspace is **PLA-30** (not this issue). Creates already attach `workspaceId` so the schema stays valid.
+Query/action scoping by current workspace is **PLA-30** (Done). Active workspace preference is **PLA-43** (`User.activeWorkspaceId` + cookie; see `lib/workspaces/active.ts`).

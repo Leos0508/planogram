@@ -58,7 +58,7 @@ export async function createWorkspaceForUser(
   const baseSlug = slugifyWorkspaceName(name) ?? `ws-${input.userId.slice(0, 8)}`;
   const slug = `${baseSlug}-${input.userId.slice(0, 8)}`;
 
-  return db.workspace.create({
+  const workspace = await db.workspace.create({
     data: {
       name,
       slug,
@@ -71,6 +71,13 @@ export async function createWorkspaceForUser(
       },
     },
   });
+
+  await db.user.update({
+    where: { id: input.userId },
+    data: { activeWorkspaceId: workspace.id },
+  });
+
+  return workspace;
 }
 
 /**

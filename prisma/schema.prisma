@@ -35,10 +35,11 @@ model Workspace {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  members      WorkspaceMember[]
-  invitations  WorkspaceInvitation[]
-  planograms   Planogram[]
-  skus         SKU[]
+  members         WorkspaceMember[]
+  invitations     WorkspaceInvitation[]
+  planograms      Planogram[]
+  skus            SKU[]
+  activeForUsers  User[]              @relation("UserActiveWorkspace")
 }
 
 model WorkspaceMember {
@@ -140,18 +141,22 @@ model PlanogramItem {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  accounts      Account[]
-  sessions      Session[]
-  memberships   WorkspaceMember[]
+  id                 String    @id @default(cuid())
+  name               String?
+  email              String    @unique
+  emailVerified      DateTime?
+  image              String?
+  passwordHash       String?
+  activeWorkspaceId  String?
+  accounts           Account[]
+  sessions           Session[]
+  memberships        WorkspaceMember[]
   invitationsCreated WorkspaceInvitation[] @relation("WorkspaceInvitationsCreated")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  activeWorkspace    Workspace?            @relation("UserActiveWorkspace", fields: [activeWorkspaceId], references: [id], onDelete: SetNull)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([activeWorkspaceId])
 }
 
 model Account {

@@ -1,0 +1,35 @@
+---
+description: After implementing a Linear issue, always show how it was verified (automated and/or manual tests).
+alwaysApply: true
+---
+
+# Post-implementation test display
+
+When an issue implementation is **complete** (ready for review, commit, or PR), always surface verification in the reply. Do not only say “tests pass” without showing what was run or how to verify manually.
+
+## Required in the completion reply
+
+Include a short **Test** section with at least one of:
+
+1. **Automated** — commands run + result (pass/fail counts). Prefer the scoped suite for the change when full CI is heavy.
+2. **Manual** — a concise checklist of steps the reviewer can run in the app (happy path + one edge if relevant).
+
+Use both when the issue has UI/flows that unit tests do not cover.
+
+## What to show
+
+```markdown
+### Test
+**Automated:** `pnpm test -- lib/workspaces` — 18 passed
+**Manual:**
+1. Register → confirm personal workspace loads
+2. Accept invite → still on previous active workspace (toast notes unchanged)
+3. (Later) switch via setActiveWorkspace → catalogs change
+```
+
+## Rules
+
+- Prefer running automated tests before claiming done; paste the outcome.
+- If no automated tests exist yet, say so and provide a **manual** plan (or add tests in the same issue when acceptance criteria require them).
+- Link or point to repo docs when a longer manual plan already exists (e.g. `docs/WORKSPACE_TENANCY_TEST.md`) — still summarize the critical steps in chat.
+- Skip this only for pure docs/chore with no behavior change; say “No behavioral tests (docs-only).”
