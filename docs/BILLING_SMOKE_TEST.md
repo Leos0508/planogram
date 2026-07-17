@@ -8,11 +8,18 @@ Manual verification in **Stripe test mode**. Automated unit coverage lives under
    - `STRIPE_SECRET_KEY` (test)
    - `STRIPE_PRICE_ID` (recurring Price for Unlimited)
    - `STRIPE_WEBHOOK_SECRET`
-2. Forward webhooks locally:
+2. Forward webhooks locally (keep this running while testing):
    ```bash
    stripe listen --forward-to localhost:3000/api/stripe/webhook
    ```
+   Copy the printed `whsec_…` into `STRIPE_WEBHOOK_SECRET` if not already set.
 3. Run `pnpm db:migrate` (applies `workspace_stripe_billing` migration) and `pnpm dev`.
+4. **Customer Portal** must be enabled in the Stripe Dashboard (Settings → Billing → Customer portal). A portal configuration can also be created via API.
+5. **Vercel (preview/prod):** add the same three env vars in Project Settings → Environment Variables; add a Stripe webhook endpoint pointing at `https://<host>/api/stripe/webhook` for `checkout.session.completed`, `customer.subscription.created|updated|deleted`.
+
+### Local sandbox (optional)
+
+If using a CLI-provisioned sandbox (`stripe sandbox create`), claim it before expiry so keys remain valid, then keep Product **Planogram Unlimited** + a monthly Price id in `STRIPE_PRICE_ID`.
 
 ## Checklist
 
