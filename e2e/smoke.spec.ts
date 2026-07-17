@@ -79,7 +79,9 @@ test.describe("authenticated smoke", () => {
       .click();
     await page.getByRole("menuitem", { name: "Settings" }).click();
     await expect(page).toHaveURL(/\/settings$/);
-    await expect(page.getByRole("heading", { name: "Workspace" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Workspace", exact: true }),
+    ).toBeVisible();
     await page.getByRole("complementary").getByRole("link", { name: "Members" }).click();
     await expect(page).toHaveURL(/\/settings\/members$/);
     await expect(page.getByRole("heading", { level: 1, name: "Members" })).toBeVisible();

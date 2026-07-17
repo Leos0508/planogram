@@ -1,7 +1,6 @@
 "use server";
 
 import { WorkspaceAccess, WorkspaceRole } from "@/generated/prisma/client";
-import type { PrismaClient } from "@/generated/prisma/client";
 import { signOut } from "@/auth";
 import {
   blockingOwnedWorkspaces,
@@ -12,12 +11,8 @@ import {
 import { requireSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
+import { deleteWorkspaceDeep } from "@/lib/workspaces/leave";
 import { revalidatePath } from "next/cache";
-
-type Tx = Omit<
-  PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
->;
 
 export type TransferCandidate = {
   memberId: string;
@@ -58,35 +53,6 @@ async function loadOwnedSnapshots(
     role: membership.role,
     otherMemberCount: Math.max(0, membership.workspace._count.members - 1),
   }));
-}
-
-async function deleteWorkspaceDeep(tx: Tx, workspaceId: string) {
-  const planograms = await tx.planogram.findMany({
-    where: { workspaceId },
-    select: { id: true },
-  });
-  const planogramIds = planograms.map((planogram) => planogram.id);
-
-  const shelves = await tx.planogramShelf.findMany({
-    where: { planogramId: { in: planogramIds } },
-    select: { id: true },
-  });
-  const shelfIds = shelves.map((shelf) => shelf.id);
-
-  if (shelfIds.length > 0) {
-    await tx.planogramItem.deleteMany({
-      where: { planogramShelfId: { in: shelfIds } },
-    });
-    await tx.planogramShelf.deleteMany({
-      where: { id: { in: shelfIds } },
-    });
-  }
-
-  await tx.planogram.deleteMany({ where: { workspaceId } });
-  await tx.sKU.deleteMany({ where: { workspaceId } });
-  await tx.workspaceInvitation.deleteMany({ where: { workspaceId } });
-  await tx.workspaceMember.deleteMany({ where: { workspaceId } });
-  await tx.workspace.delete({ where: { id: workspaceId } });
 }
 
 export async function getAccountDeletionStatus(): Promise<
