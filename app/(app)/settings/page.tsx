@@ -25,20 +25,24 @@ export default async function SettingsWorkspacePage() {
           Workspace
         </h1>
         <p className="text-sm text-muted-foreground">
-          Manage your workspace profile.
+          Manage profile for{" "}
+          <span className="text-foreground">{access.workspace.name}</span>.
         </p>
       </div>
       <WorkspaceSettingsForm
+        key={access.workspace.id}
         initialName={access.workspace.name}
         canEdit={isOwner}
       />
       <LeaveWorkspaceSection
+        key={`leave-${access.workspace.id}`}
         workspaceName={access.workspace.name}
         isOwner={isOwner}
         otherMemberCount={otherMemberCount}
       />
       {isOwner ? (
         <DeleteWorkspaceSection
+          key={`delete-${access.workspace.id}`}
           workspaceName={access.workspace.name}
           otherMemberCount={otherMemberCount}
         />

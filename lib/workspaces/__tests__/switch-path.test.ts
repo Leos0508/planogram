@@ -7,9 +7,11 @@ describe("catalogPathAfterSwitch", () => {
     expect(catalogPathAfterSwitch("/skus/sku-1")).toBe("/planograms");
   });
 
-  it("keeps list and settings routes", () => {
+  it("keeps list and settings routes (PLA-49: settings stay and refresh)", () => {
     expect(catalogPathAfterSwitch("/planograms")).toBeNull();
     expect(catalogPathAfterSwitch("/skus")).toBeNull();
+    expect(catalogPathAfterSwitch("/settings")).toBeNull();
     expect(catalogPathAfterSwitch("/settings/members")).toBeNull();
+    expect(catalogPathAfterSwitch("/settings/account")).toBeNull();
   });
 });

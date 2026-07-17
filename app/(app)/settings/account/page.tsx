@@ -38,11 +38,14 @@ export default async function SettingsAccountPage() {
           Account
         </h1>
         <p className="text-sm text-muted-foreground">
-          Manage your personal profile.
+          Manage your personal profile. Ownership transfer uses the active
+          workspace (
+          <span className="text-foreground">{access.workspace.name}</span>
+          ).
         </p>
       </div>
       <AccountSettingsForm
-        key={`delete-${deletion.data.blockers.length}-${deletion.data.transferCandidates.length}`}
+        key={`${access.workspace.id}-${deletion.data.blockers.length}-${deletion.data.transferCandidates.length}`}
         initialName={user.name}
         email={user.email}
         deletion={deletion.data}
