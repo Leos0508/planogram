@@ -39,3 +39,4 @@ Manual verification that SKU image upload works end-to-end. Unit coverage lives 
 
 - Images are stored at `workspaces/{workspaceId}/skus/…` with **public** access so canvas/SVG can load them without auth.
 - Paste URL remains supported alongside upload.
+- Server Action body limit is raised to **3 MB** in `next.config.ts` so 2 MB files fit with multipart overhead (Next default is 1 MB).
