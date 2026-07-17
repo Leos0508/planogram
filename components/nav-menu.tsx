@@ -6,6 +6,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { MenuIcon, XIcon } from "lucide-react";
 import { signOutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
+import WorkspaceSwitcher from "@/components/workspace-switcher";
+import type { WorkspaceMembershipListItem } from "@/lib/workspaces/list";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -19,8 +21,10 @@ function isActivePath(pathname: string, href: string) {
 
 export default function NavMenu({
   user,
+  workspaces,
 }: {
   user: { name?: string | null; email?: string | null } | null;
+  workspaces: WorkspaceMembershipListItem[];
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -60,7 +64,9 @@ export default function NavMenu({
           Planogram
         </Link>
 
-        <div className="ml-4 hidden items-center gap-1 sm:flex">
+        {user ? <WorkspaceSwitcher workspaces={workspaces} /> : null}
+
+        <div className="ml-2 hidden items-center gap-1 sm:flex">
           {navItems.map((item) => {
             const active = isActivePath(pathname, item.href);
             return (
