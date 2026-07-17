@@ -28,4 +28,4 @@ New users from `/register` get their own workspace; they are not added to legacy
 
 ## Follow-up
 
-Query/action scoping by current workspace is **PLA-30** (Done). Active workspace preference is **PLA-43** (`User.activeWorkspaceId` + cookie; see `lib/workspaces/active.ts`).
+Query/action scoping by current workspace is **PLA-30** (Done). Active workspace preference is **PLA-43** (`User.activeWorkspaceId` + cookie; see `lib/workspaces/active.ts`). Multi-workspace UX (**PLA-44**–**51**, smoke **PLA-50**) is Done — switcher, create (soft-cap 3), leave/delete, invite stay + optional switch, settings context. Per-workspace billing remains **S5**.

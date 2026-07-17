@@ -50,7 +50,7 @@ Run after multi-workspace changes when not relying on Playwright alone:
 | Delete as sole OWNER (`/settings`) | Type workspace name → cascade delete; other/personal WS active |
 | Delete as OWNER with others | Blocked; link to Members first (no delete-for-everyone) |
 | Delete last remaining membership | Allowed; bootstraps personal workspace (account delete is separate) |
-| Switch while on `/planograms/[id]` | Redirects to `/planograms` for the new workspace |
+| Switch while on `/planograms/[id]` or `/skus/[id]` | Redirects to `/planograms` for the new workspace |
 | Switch while on `/settings` or `/settings/members` | Stay on route; side nav shows new WS name; members list remounts for new WS |
 | Settings shell | Aside shows active workspace name under “Settings” |
 | Clear cookie but keep `User.activeWorkspaceId` | Still resolves to that workspace |

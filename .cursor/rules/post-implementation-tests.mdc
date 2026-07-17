@@ -23,8 +23,8 @@ Use both when the issue has UI/flows that unit tests do not cover.
 **Automated:** `pnpm test -- lib/workspaces` — 18 passed
 **Manual:**
 1. Register → confirm personal workspace loads
-2. Accept invite → still on previous active workspace (toast notes unchanged)
-3. (Later) switch via setActiveWorkspace → catalogs change
+2. Accept invite → stay on previous active workspace; optional Switch offered
+3. Switch via navbar workspace switcher → catalogs change
 ```
 
 ## Rules
