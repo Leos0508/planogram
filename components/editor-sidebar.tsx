@@ -10,10 +10,12 @@ export default function EditorSidebar({
   planogram,
   open,
   onToggle,
+  canWrite,
 }: {
   planogram: PlanogramDetail;
   open: boolean;
   onToggle: () => void;
+  canWrite: boolean;
 }) {
   return (
     <aside
@@ -51,7 +53,7 @@ export default function EditorSidebar({
 
       {open ? (
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
-          <PlanogramSettingsPanel planogram={planogram} />
+          <PlanogramSettingsPanel planogram={planogram} canWrite={canWrite} />
         </div>
       ) : null}
     </aside>

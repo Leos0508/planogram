@@ -1,8 +1,15 @@
 import PlanogramsPageClient from "@/components/planograms-page-client";
 import { getPlanograms } from "@/lib/planograms/queries";
+import { canWriteWorkspace } from "@/lib/workspaces/capabilities";
+import { requireWorkspace } from "@/lib/workspaces/current";
 import { Suspense } from "react";
 
 export default async function PlanogramsPage() {
+  const access = await requireWorkspace();
+  if (!access.ok) {
+    throw new Error(access.message);
+  }
+
   const planograms = await getPlanograms();
 
   if (!planograms.ok) {
@@ -20,7 +27,10 @@ export default async function PlanogramsPage() {
         </div>
       }
     >
-      <PlanogramsPageClient planograms={planograms.data} />
+      <PlanogramsPageClient
+        planograms={planograms.data}
+        canWrite={canWriteWorkspace(access.workspace)}
+      />
     </Suspense>
   );
 }

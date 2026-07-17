@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { DragSku } from "@/hooks/use-planogram-drag";
 import { cn } from "@/lib/utils";
+import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import { Sku } from "@/lib/skus/queries";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
@@ -10,11 +11,13 @@ import SkuCard from "./sku-card";
 
 export default function EditorBottomMenu({
   skus,
+  canWrite,
   onSkuPointerDown,
   open,
   onToggle,
 }: {
   skus: Sku[];
+  canWrite: boolean;
   onSkuPointerDown: (sku: DragSku, event: React.PointerEvent) => void;
   open: boolean;
   onToggle: () => void;
@@ -56,7 +59,11 @@ export default function EditorBottomMenu({
 
       {open ? (
         <div className="flex items-start gap-2 overflow-x-auto p-3">
-          {placeableSkus.length === 0 ? (
+          {!canWrite ? (
+            <p className="px-2 text-xs text-muted-foreground">
+              {WORKSPACE_READ_ONLY_HINT}
+            </p>
+          ) : placeableSkus.length === 0 ? (
             <p className="px-2 text-xs text-muted-foreground">
               No placeable SKUs. Add products with width and height in mm on the
               SKUs page.

@@ -19,6 +19,11 @@ import {
   createWorkspace,
   setActiveWorkspace,
 } from "@/lib/workspaces/actions";
+import {
+  canOwnAnotherWorkspace,
+  countOwnedWorkspaces,
+  ownedWorkspaceLimitMessage,
+} from "@/lib/workspaces/limits";
 import type { WorkspaceMembershipListItem } from "@/lib/workspaces/list";
 import { catalogPathAfterSwitch } from "@/lib/workspaces/switch-path";
 import { WORKSPACE_NAME_MAX_LENGTH } from "@/lib/settings/validation";
@@ -88,13 +93,21 @@ export default function WorkspaceSwitcher({
     });
   };
 
+  const ownedCount = countOwnedWorkspaces(workspaces);
+  const canCreate = canOwnAnotherWorkspace(ownedCount);
+  const createBlockedReason = canCreate
+    ? null
+    : ownedWorkspaceLimitMessage();
+
   const openCreate = () => {
+    if (!canCreate) return;
     setMenuOpen(false);
     setName("");
     setCreateOpen(true);
   };
 
   const onCreate = () => {
+    if (!canCreate) return;
     startTransition(async () => {
       const result = await createWorkspace({ name });
       if (!result.ok) {
@@ -157,20 +170,36 @@ export default function WorkspaceSwitcher({
             <button
               type="button"
               role="menuitem"
-              className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-              disabled={pending}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm",
+                canCreate
+                  ? "hover:bg-muted"
+                  : "cursor-not-allowed text-muted-foreground",
+              )}
+              disabled={pending || !canCreate}
+              title={createBlockedReason ?? undefined}
+              aria-disabled={!canCreate}
               onClick={openCreate}
             >
               Create workspace
             </button>
+            {createBlockedReason ? (
+              <p className="px-3 pb-2 text-xs text-muted-foreground">
+                {createBlockedReason}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>
 
       <Dialog
-        open={createOpen}
+        open={createOpen && canCreate}
         onOpenChange={(open) => {
           if (pending) return;
+          if (!canCreate) {
+            setCreateOpen(false);
+            return;
+          }
           setCreateOpen(open);
           if (!open) setName("");
         }}

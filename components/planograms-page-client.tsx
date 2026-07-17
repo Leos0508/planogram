@@ -37,6 +37,7 @@ import {
   PLANOGRAM_NAME_MAX_LENGTH,
   validatePlanogramName,
 } from "@/lib/planograms/validation";
+import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import { LayoutGridIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -105,8 +106,10 @@ function replaceListParams(
 
 export default function PlanogramsPageClient({
   planograms,
+  canWrite,
 }: {
   planograms: PlanogramListItem[];
+  canWrite: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -168,13 +171,14 @@ export default function PlanogramsPageClient({
   };
 
   const handleCreateOpenChange = (open: boolean) => {
-    if (isCreating) return;
+    if (isCreating || !canWrite) return;
     setCreateOpen(open);
     if (!open) resetCreateDialog();
   };
 
   const handleCreate = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!canWrite) return;
     const validationError = validatePlanogramName(createName);
     if (validationError) {
       setCreateNameError(validationError);
@@ -200,7 +204,7 @@ export default function PlanogramsPageClient({
   };
 
   const handleDeleteConfirm = () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || !canWrite) return;
 
     startDeleteTransition(async () => {
       const result = await deletePlanogram({ id: deleteTarget.id });
@@ -219,15 +223,24 @@ export default function PlanogramsPageClient({
       <CatalogPageLayout
         title="Planograms"
         action={
-          <Button
-            type="button"
-            size="sm"
-            disabled={listBusy}
-            onClick={() => setCreateOpen(true)}
-          >
-            <PlusIcon className="size-4" />
-            New
-          </Button>
+          canWrite ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={listBusy}
+              onClick={() => setCreateOpen(true)}
+            >
+              <PlusIcon className="size-4" />
+              New
+            </Button>
+          ) : null
+        }
+        banner={
+          !canWrite ? (
+            <p className="text-sm text-muted-foreground">
+              {WORKSPACE_READ_ONLY_HINT}
+            </p>
+          ) : null
         }
         search={
           <div className="relative">
@@ -322,18 +335,22 @@ export default function PlanogramsPageClient({
               </EmptyMedia>
               <EmptyTitle>No planograms yet</EmptyTitle>
               <EmptyDescription>
-                Create a planogram to start placing SKUs on shelves.
+                {canWrite
+                  ? "Create a planogram to start placing SKUs on shelves."
+                  : WORKSPACE_READ_ONLY_HINT}
               </EmptyDescription>
             </EmptyHeader>
-            <Button
-              type="button"
-              size="sm"
-              disabled={listBusy}
-              onClick={() => setCreateOpen(true)}
-            >
-              <PlusIcon className="size-4" />
-              New planogram
-            </Button>
+            {canWrite ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={listBusy}
+                onClick={() => setCreateOpen(true)}
+              >
+                <PlusIcon className="size-4" />
+                New planogram
+              </Button>
+            ) : null}
           </Empty>
         ) : filtered.length === 0 && hasListConstraints ? (
           <Empty className="border border-dashed">
@@ -367,6 +384,7 @@ export default function PlanogramsPageClient({
                 <PlanogramCard
                   planogram={planogram}
                   disabled={listBusy}
+                  canDelete={canWrite}
                   onDelete={(id, name) => setDeleteTarget({ id, name })}
                 />
               </li>
@@ -375,7 +393,10 @@ export default function PlanogramsPageClient({
         )}
       </CatalogPageLayout>
 
-      <Dialog open={createOpen} onOpenChange={handleCreateOpenChange}>
+      <Dialog
+        open={createOpen && canWrite}
+        onOpenChange={handleCreateOpenChange}
+      >
         <DialogContent showCloseButton={!isCreating}>
           <DialogHeader>
             <DialogTitle>New planogram</DialogTitle>
@@ -431,7 +452,10 @@ export default function PlanogramsPageClient({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteTarget !== null} onOpenChange={handleDeleteOpenChange}>
+      <Dialog
+        open={deleteTarget !== null && canWrite}
+        onOpenChange={handleDeleteOpenChange}
+      >
         <DialogContent showCloseButton={!isDeleting}>
           <DialogHeader>
             <DialogTitle>Delete planogram</DialogTitle>

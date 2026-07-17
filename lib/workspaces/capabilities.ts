@@ -8,6 +8,10 @@ export type MembershipCapability = {
   access: WorkspaceAccess;
 };
 
+/** Inline hint when write controls are disabled for READ members. */
+export const WORKSPACE_READ_ONLY_HINT =
+  "You have read-only access to this workspace.";
+
 /** OWNER always writes; MEMBER writes only with FULL access. */
 export function canWriteWorkspace(member: MembershipCapability): boolean {
   if (member.role === WorkspaceRole.OWNER) return true;

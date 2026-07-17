@@ -10,6 +10,7 @@ import { createWorkspaceForUser } from "@/lib/workspaces/bootstrap";
 import {
   canManageMembers,
   canWriteWorkspace,
+  WORKSPACE_READ_ONLY_HINT,
 } from "@/lib/workspaces/capabilities";
 import { isCrossWorkspaceMiss } from "@/lib/workspaces/access";
 import { readActiveWorkspaceCookie } from "@/lib/workspaces/cookie";
@@ -127,7 +128,7 @@ export async function requireWorkspaceWrite(): Promise<
   if (!canWriteWorkspace(access.workspace)) {
     return {
       ok: false,
-      message: "You have read-only access to this workspace.",
+      message: WORKSPACE_READ_ONLY_HINT,
     };
   }
   return access;

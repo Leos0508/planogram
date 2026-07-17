@@ -28,12 +28,14 @@ export default function PlanogramItemInspector({
   state,
   selectedItemId,
   skuById,
+  canWrite = true,
   onChangeFacings,
   onShelfLayout,
 }: {
   state: PlanogramState;
   selectedItemId: string | null;
   skuById: Map<string, Sku>;
+  canWrite?: boolean;
   onChangeFacings: (delta: number) => void;
   onShelfLayout: (mode: ShelfLayoutMode) => void;
 }) {
@@ -82,27 +84,35 @@ export default function PlanogramItemInspector({
         <div className="flex items-center justify-between gap-2">
           <dt className="text-muted-foreground">Facings</dt>
           <dd className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-xs"
-              onClick={() => onChangeFacings(-1)}
-              disabled={item.facingsWide <= 1}
-              title="Decrease facings (Shift+3)"
-            >
-              <MinusIcon className="size-3" />
-            </Button>
-            <span className="min-w-6 text-center font-mono">{item.facingsWide}</span>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-xs"
-              onClick={() => onChangeFacings(1)}
-              disabled={item.facingsWide >= 99}
-              title="Increase facings (3)"
-            >
-              <PlusIcon className="size-3" />
-            </Button>
+            {canWrite ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={() => onChangeFacings(-1)}
+                  disabled={item.facingsWide <= 1}
+                  title="Decrease facings (Shift+3)"
+                >
+                  <MinusIcon className="size-3" />
+                </Button>
+                <span className="min-w-6 text-center font-mono">
+                  {item.facingsWide}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={() => onChangeFacings(1)}
+                  disabled={item.facingsWide >= 99}
+                  title="Increase facings (3)"
+                >
+                  <PlusIcon className="size-3" />
+                </Button>
+              </>
+            ) : (
+              <span className="font-mono">{item.facingsWide}</span>
+            )}
           </dd>
         </div>
         <div className="flex justify-between gap-2">
@@ -111,7 +121,7 @@ export default function PlanogramItemInspector({
         </div>
       </dl>
 
-      {baseRowCount > 0 ? (
+      {canWrite && baseRowCount > 0 ? (
         <div className="mt-3 border-t pt-3">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
             Shelf row
@@ -134,7 +144,9 @@ export default function PlanogramItemInspector({
       ) : null}
 
       <p className="mt-2 text-[10px] text-muted-foreground">
-        Alt float · 3 / Shift+3 facings · Arrow nudge · Delete removes
+        {canWrite
+          ? "Alt float · 3 / Shift+3 facings · Arrow nudge · Delete removes"
+          : "View-only selection details"}
       </p>
     </div>
   );

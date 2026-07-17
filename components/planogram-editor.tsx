@@ -67,12 +67,14 @@ function isEditableTarget(target: EventTarget | null) {
 export default function PlanogramEditor({
   planogram,
   skus,
+  canWrite,
   bottomMenuOpen,
   onBottomMenuToggle,
   panelLayoutKey,
 }: {
   planogram: PlanogramDetail;
   skus: Sku[];
+  canWrite: boolean;
   bottomMenuOpen: boolean;
   onBottomMenuToggle: () => void;
   panelLayoutKey: string;
@@ -249,6 +251,7 @@ export default function PlanogramEditor({
 
   const changeFacings = useCallback(
     async (itemId: string, delta: number) => {
+      if (!canWrite) return;
       const found = stateRef.current.shelves
         .flatMap((shelf) => shelf.items.map((item) => ({ shelf, item })))
         .find(({ item }) => item.id === itemId);
@@ -289,20 +292,22 @@ export default function PlanogramEditor({
         historyRef.current.push({ type: "facings", itemId, from, to });
       }
     },
-    [planogram.id, toast],
+    [canWrite, planogram.id, toast],
   );
 
   const handleUndo = useCallback(async () => {
+    if (!canWrite) return;
     const entry = historyRef.current.popUndo();
     if (!entry) return;
     await applyHistoryEntry(historyRef.current.invert(entry));
-  }, [applyHistoryEntry]);
+  }, [applyHistoryEntry, canWrite]);
 
   const handleRedo = useCallback(async () => {
+    if (!canWrite) return;
     const entry = historyRef.current.popRedo();
     if (!entry) return;
     await applyHistoryEntry(entry);
-  }, [applyHistoryEntry]);
+  }, [applyHistoryEntry, canWrite]);
 
   const persistMove = useCallback(
     async (
@@ -355,6 +360,7 @@ export default function PlanogramEditor({
 
   const onCommit = useCallback(
     async (result: DragCommit) => {
+      if (!canWrite) return;
       if (result.kind === "palette") {
         const tempId = crypto.randomUUID();
         const optimisticItem: PlanogramItem = {
@@ -422,11 +428,11 @@ export default function PlanogramEditor({
       setState((prev) => moveItemInState(prev, result.itemId, to));
       await persistMove(result.itemId, from, to, true);
     },
-    [persistMove, planogram.id, toast],
+    [canWrite, persistMove, planogram.id, toast],
   );
 
   const onDeleteSelected = useCallback(async () => {
-    if (!selectedItemId) return;
+    if (!canWrite || !selectedItemId) return;
 
     const found = stateRef.current.shelves
       .flatMap((shelf) => shelf.items.map((item) => ({ shelf, item })))
@@ -454,7 +460,7 @@ export default function PlanogramEditor({
     if (!applyingHistoryRef.current) {
       historyRef.current.push({ type: "delete", item });
     }
-  }, [planogram.id, selectedItemId, toast]);
+  }, [canWrite, planogram.id, selectedItemId, toast]);
 
   const changeSelectedFacings = useCallback(
     (delta: number) => {
@@ -482,6 +488,7 @@ export default function PlanogramEditor({
 
   const persistShelfResize = useCallback(
     async (shelfId: string, minContentHeightMm: number) => {
+      if (!canWrite) return;
       const shelf = stateRef.current.shelves.find((row) => row.id === shelfId);
       if (!shelf || shelf.minContentHeightMm === minContentHeightMm) return;
 
@@ -504,11 +511,12 @@ export default function PlanogramEditor({
         toast.error(response.message);
       }
     },
-    [planogram.id, toast],
+    [canWrite, planogram.id, toast],
   );
 
   const persistShelfWidthResize = useCallback(
     async (shelfId: string, minContentWidthMm: number) => {
+      if (!canWrite) return;
       const shelf = stateRef.current.shelves.find((row) => row.id === shelfId);
       if (!shelf || shelf.minContentWidthMm === minContentWidthMm) return;
 
@@ -531,7 +539,7 @@ export default function PlanogramEditor({
         toast.error(response.message);
       }
     },
-    [planogram.id, toast],
+    [canWrite, planogram.id, toast],
   );
 
   const { drag, startDrag, startItemDrag, cancelDrag } = usePlanogramDrag({
@@ -578,7 +586,7 @@ export default function PlanogramEditor({
 
   const applyShelfLayout = useCallback(
     async (mode: ShelfLayoutMode) => {
-      if (!selectedItemId || drag) return;
+      if (!canWrite || !selectedItemId || drag) return;
 
       const found = stateRef.current.shelves
         .flatMap((shelf) => shelf.items.map((item) => ({ shelf, item })))
@@ -662,7 +670,7 @@ export default function PlanogramEditor({
         historyRef.current.push({ type: "batchMove", moves });
       }
     },
-    [drag, planogram.id, selectedItemId, toast],
+    [canWrite, drag, planogram.id, selectedItemId, toast],
   );
 
   const handleExportSvg = useCallback(() => {
@@ -689,7 +697,7 @@ export default function PlanogramEditor({
 
   const nudgeSelected = useCallback(
     (deltaMm: number) => {
-      if (!selectedItemId || drag) return;
+      if (!canWrite || !selectedItemId || drag) return;
 
       const placement = nudgeItemX(stateRef.current, selectedItemId, deltaMm);
       if (!placement) return;
@@ -724,7 +732,7 @@ export default function PlanogramEditor({
         to,
       });
     },
-    [drag, scheduleNudgePersist, selectedItemId],
+    [canWrite, drag, scheduleNudgePersist, selectedItemId],
   );
 
   const layout = useMemo(() => {
@@ -774,13 +782,14 @@ export default function PlanogramEditor({
 
       const mod = event.metaKey || event.ctrlKey;
 
-      if (mod && event.key.toLowerCase() === "z" && !event.shiftKey) {
+      if (canWrite && mod && event.key.toLowerCase() === "z" && !event.shiftKey) {
         event.preventDefault();
         void handleUndo();
         return;
       }
 
       if (
+        canWrite &&
         mod &&
         (event.key.toLowerCase() === "y" ||
           (event.key.toLowerCase() === "z" && event.shiftKey))
@@ -796,6 +805,7 @@ export default function PlanogramEditor({
       }
 
       if (
+        canWrite &&
         (event.key === "Delete" || event.key === "Backspace") &&
         selectedItemId &&
         !drag
@@ -805,7 +815,7 @@ export default function PlanogramEditor({
         return;
       }
 
-      if (!selectedItemId || drag) return;
+      if (!canWrite || !selectedItemId || drag) return;
 
       if (event.key === "3") {
         event.preventDefault();
@@ -829,6 +839,7 @@ export default function PlanogramEditor({
       flushNudgePersist();
     };
   }, [
+    canWrite,
     changeFacings,
     cancelDrag,
     drag,
@@ -852,6 +863,7 @@ export default function PlanogramEditor({
       event: React.PointerEvent,
     ) => {
       setSelectedItemId(item.id);
+      if (!canWrite) return;
       const sku = skuById.get(item.skuId);
       startItemDrag(
         {
@@ -864,7 +876,31 @@ export default function PlanogramEditor({
         event,
       );
     },
-    [skuById, startItemDrag],
+    [canWrite, skuById, startItemDrag],
+  );
+
+  const handleShelfResizePointerDown = useCallback(
+    (shelfId: string, event: React.PointerEvent) => {
+      if (!canWrite) return;
+      startShelfResize(shelfId, event);
+    },
+    [canWrite, startShelfResize],
+  );
+
+  const handleShelfWidthResizePointerDown = useCallback(
+    (shelfId: string, event: React.PointerEvent) => {
+      if (!canWrite) return;
+      startShelfWidthResize(shelfId, event);
+    },
+    [canWrite, startShelfWidthResize],
+  );
+
+  const handleSkuPointerDown = useCallback(
+    (sku: Parameters<typeof startDrag>[0], event: React.PointerEvent) => {
+      if (!canWrite) return;
+      startDrag(sku, event);
+    },
+    [canWrite, startDrag],
   );
 
   return (
@@ -873,10 +909,10 @@ export default function PlanogramEditor({
         viewportRef={viewportRef}
         transform={transform}
         onFitToView={fitToView}
-        canUndo={history.canUndo}
-        canRedo={history.canRedo}
-        onUndo={() => void handleUndo()}
-        onRedo={() => void handleRedo()}
+        canUndo={canWrite && history.canUndo}
+        canRedo={canWrite && history.canRedo}
+        onUndo={canWrite ? () => void handleUndo() : undefined}
+        onRedo={canWrite ? () => void handleRedo() : undefined}
         onExportSvg={handleExportSvg}
       >
         <PlanogramCanvas
@@ -890,8 +926,8 @@ export default function PlanogramEditor({
           selectedItemId={selectedItemId}
           activeShelfId={activeShelfId}
           onItemPointerDown={handleItemPointerDown}
-          onShelfResizePointerDown={startShelfResize}
-          onShelfWidthResizePointerDown={startShelfWidthResize}
+          onShelfResizePointerDown={handleShelfResizePointerDown}
+          onShelfWidthResizePointerDown={handleShelfWidthResizePointerDown}
           onCanvasPointerDown={() => setSelectedItemId(null)}
         />
       </PlanogramViewport>
@@ -900,6 +936,7 @@ export default function PlanogramEditor({
         state={state}
         selectedItemId={selectedItemId}
         skuById={skuById}
+        canWrite={canWrite}
         onChangeFacings={changeSelectedFacings}
         onShelfLayout={(mode) => void applyShelfLayout(mode)}
       />
@@ -915,7 +952,8 @@ export default function PlanogramEditor({
 
       <EditorBottomMenu
         skus={skus}
-        onSkuPointerDown={startDrag}
+        canWrite={canWrite}
+        onSkuPointerDown={handleSkuPointerDown}
         open={bottomMenuOpen}
         onToggle={onBottomMenuToggle}
       />

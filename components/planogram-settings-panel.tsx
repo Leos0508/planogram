@@ -10,14 +10,17 @@ import {
 } from "@/lib/planograms/actions";
 import type { PlanogramDetail } from "@/lib/planograms/queries";
 import { parseNonNegativeInt } from "@/lib/validation/sku";
+import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 export default function PlanogramSettingsPanel({
   planogram,
+  canWrite,
 }: {
   planogram: PlanogramDetail;
+  canWrite: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -32,6 +35,7 @@ export default function PlanogramSettingsPanel({
 
   const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!canWrite) return;
     setError(null);
     setMessage(null);
 
@@ -59,6 +63,7 @@ export default function PlanogramSettingsPanel({
   };
 
   const handleAddShelf = () => {
+    if (!canWrite) return;
     setError(null);
     setMessage(null);
     startTransition(async () => {
@@ -73,6 +78,7 @@ export default function PlanogramSettingsPanel({
   };
 
   const handleRemoveShelf = (shelfId: string, index: number) => {
+    if (!canWrite) return;
     if (!window.confirm(`Remove shelf ${index + 1}?`)) return;
 
     setError(null);
@@ -93,6 +99,10 @@ export default function PlanogramSettingsPanel({
 
   return (
     <div className="flex flex-col gap-4">
+      {!canWrite ? (
+        <p className="text-xs text-muted-foreground">{WORKSPACE_READ_ONLY_HINT}</p>
+      ) : null}
+
       <form onSubmit={handleSave} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="settings-name">Name</Label>
@@ -101,6 +111,7 @@ export default function PlanogramSettingsPanel({
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
+            disabled={!canWrite || pending}
           />
         </div>
 
@@ -115,6 +126,7 @@ export default function PlanogramSettingsPanel({
               onChange={(event) => setTopClearance(event.target.value)}
               className="font-mono"
               required
+              disabled={!canWrite || pending}
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -127,13 +139,16 @@ export default function PlanogramSettingsPanel({
               onChange={(event) => setStackGap(event.target.value)}
               className="font-mono"
               required
+              disabled={!canWrite || pending}
             />
           </div>
         </div>
 
-        <Button type="submit" size="sm" disabled={pending}>
-          Save settings
-        </Button>
+        {canWrite ? (
+          <Button type="submit" size="sm" disabled={pending}>
+            Save settings
+          </Button>
+        ) : null}
       </form>
 
       <div className="flex flex-col gap-2">
@@ -141,16 +156,18 @@ export default function PlanogramSettingsPanel({
           <span className="text-xs font-semibold uppercase tracking-widest">
             Shelves
           </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="xs"
-            onClick={handleAddShelf}
-            disabled={pending}
-          >
-            <PlusIcon className="size-3" />
-            Add
-          </Button>
+          {canWrite ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={handleAddShelf}
+              disabled={pending}
+            >
+              <PlusIcon className="size-3" />
+              Add
+            </Button>
+          ) : null}
         </div>
 
         <ul className="flex flex-col gap-1">
@@ -165,16 +182,18 @@ export default function PlanogramSettingsPanel({
                   {shelf.items.length} item{shelf.items.length === 1 ? "" : "s"}
                 </span>
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                title={`Remove shelf ${shelf.index + 1}`}
-                disabled={pending || shelves.length <= 1}
-                onClick={() => handleRemoveShelf(shelf.id, shelf.index)}
-              >
-                <Trash2Icon className="size-3 text-destructive" />
-              </Button>
+              {canWrite ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  title={`Remove shelf ${shelf.index + 1}`}
+                  disabled={pending || shelves.length <= 1}
+                  onClick={() => handleRemoveShelf(shelf.id, shelf.index)}
+                >
+                  <Trash2Icon className="size-3 text-destructive" />
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -192,8 +211,9 @@ export default function PlanogramSettingsPanel({
       ) : null}
 
       <p className="text-xs text-muted-foreground">
-        Drag SKUs from the bottom tray onto a shelf. Select an item and press
-        Delete to remove it.
+        {canWrite
+          ? "Drag SKUs from the bottom tray onto a shelf. Select an item and press Delete to remove it."
+          : "View-only: placement and settings cannot be changed."}
       </p>
     </div>
   );
