@@ -5,19 +5,24 @@ import {
 } from "@/generated/prisma/client";
 import { requireSessionUser, type SessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { resolveActiveWorkspaceId } from "@/lib/workspaces/active";
 import { createWorkspaceForUser } from "@/lib/workspaces/bootstrap";
 import {
   canManageMembers,
   canWriteWorkspace,
 } from "@/lib/workspaces/capabilities";
 import { isCrossWorkspaceMiss } from "@/lib/workspaces/access";
+import { readActiveWorkspaceCookie } from "@/lib/workspaces/cookie";
 
 export { isCrossWorkspaceMiss };
 
 /**
  * Current workspace for the signed-in user.
- * v1: newest membership so accepting an invite surfaces the shared workspace.
- * Plan 02 replaces this with an explicit active-workspace preference.
+ * Resolved from cookie → User.activeWorkspaceId → oldest membership.
+ *
+ * Invite accept does **not** change the active workspace (PLA-43); the user
+ * stays on their previous active until they switch (PLA-45) or create/set
+ * active explicitly.
  */
 export type CurrentWorkspace = {
   id: string;
@@ -29,32 +34,66 @@ export type CurrentWorkspace = {
   user: SessionUser;
 };
 
+function toCurrentWorkspace(
+  membership: {
+    role: WorkspaceRole;
+    access: WorkspaceAccess;
+    workspace: {
+      id: string;
+      name: string;
+      slug: string | null;
+      tier: WorkspaceTier;
+    };
+  },
+  user: SessionUser,
+): CurrentWorkspace {
+  return {
+    id: membership.workspace.id,
+    name: membership.workspace.name,
+    slug: membership.workspace.slug,
+    tier: membership.workspace.tier,
+    role: membership.role,
+    access: membership.access,
+    user,
+  };
+}
+
 export async function getCurrentWorkspace(): Promise<CurrentWorkspace | null> {
   const session = await requireSessionUser();
   if (!session.ok) {
     return null;
   }
 
-  const membership = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    include: { workspace: true },
-  });
+  const userId = session.user.id;
 
-  if (membership) {
-    return {
-      id: membership.workspace.id,
-      name: membership.workspace.name,
-      slug: membership.workspace.slug,
-      tier: membership.workspace.tier,
-      role: membership.role,
-      access: membership.access,
-      user: session.user,
-    };
+  const [cookieWorkspaceId, userRow, memberships] = await Promise.all([
+    readActiveWorkspaceCookie(),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { activeWorkspaceId: true },
+    }),
+    prisma.workspaceMember.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      include: { workspace: true },
+    }),
+  ]);
+
+  if (memberships.length > 0) {
+    const activeId = resolveActiveWorkspaceId({
+      cookieWorkspaceId,
+      dbWorkspaceId: userRow?.activeWorkspaceId,
+      membershipWorkspaceIds: memberships.map((m) => m.workspaceId),
+    });
+
+    const membership =
+      memberships.find((m) => m.workspaceId === activeId) ?? memberships[0];
+
+    return toCurrentWorkspace(membership, session.user);
   }
 
   const workspace = await createWorkspaceForUser(prisma, {
-    userId: session.user.id,
+    userId,
     name: session.user.name,
     email: session.user.email,
   });

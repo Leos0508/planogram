@@ -248,6 +248,11 @@ export async function removeMember(input: {
   }
 }
 
+/**
+ * Join a workspace via invite token.
+ * Does **not** change the active workspace (PLA-43) — catalogs stay on the
+ * previous active until the user switches (PLA-45 / setActiveWorkspace).
+ */
 export async function acceptInvite(input: {
   token: string;
 }): Promise<ActionResult<{ workspaceId: string; workspaceName: string }>> {

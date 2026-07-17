@@ -5,6 +5,7 @@ import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createWorkspaceForUser } from "@/lib/workspaces/bootstrap";
+import { writeActiveWorkspaceCookie } from "@/lib/workspaces/cookie";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -94,11 +95,13 @@ export async function register(
     },
   });
 
-  await createWorkspaceForUser(prisma, {
+  const workspace = await createWorkspaceForUser(prisma, {
     userId: user.id,
     name: user.name,
     email: user.email,
   });
+
+  await writeActiveWorkspaceCookie(workspace.id);
 
   try {
     await signIn("credentials", {
