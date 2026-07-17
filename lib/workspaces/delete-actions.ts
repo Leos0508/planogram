@@ -71,6 +71,17 @@ export async function deleteWorkspace(input: {
 
     const deletedWorkspaceName = workspace.name;
 
+    const billing = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { stripeSubscriptionId: true },
+    });
+    const { cancelStripeSubscriptionIfPresent } = await import(
+      "@/lib/billing/sync"
+    );
+    await cancelStripeSubscriptionIfPresent({
+      stripeSubscriptionId: billing?.stripeSubscriptionId ?? null,
+    });
+
     await prisma.$transaction(async (tx) => {
       await deleteWorkspaceDeep(tx, workspaceId);
     });

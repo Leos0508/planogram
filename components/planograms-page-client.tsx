@@ -107,10 +107,13 @@ function replaceListParams(
 export default function PlanogramsPageClient({
   planograms,
   canWrite,
+  createBlockedReason = null,
 }: {
   planograms: PlanogramListItem[];
   canWrite: boolean;
+  createBlockedReason?: string | null;
 }) {
+  const canCreate = canWrite && !createBlockedReason;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -171,14 +174,14 @@ export default function PlanogramsPageClient({
   };
 
   const handleCreateOpenChange = (open: boolean) => {
-    if (isCreating || !canWrite) return;
+    if (isCreating || !canCreate) return;
     setCreateOpen(open);
     if (!open) resetCreateDialog();
   };
 
   const handleCreate = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!canWrite) return;
+    if (!canCreate) return;
     const validationError = validatePlanogramName(createName);
     if (validationError) {
       setCreateNameError(validationError);
@@ -227,8 +230,12 @@ export default function PlanogramsPageClient({
             <Button
               type="button"
               size="sm"
-              disabled={listBusy}
-              onClick={() => setCreateOpen(true)}
+              disabled={listBusy || !canCreate}
+              title={createBlockedReason ?? undefined}
+              onClick={() => {
+                if (!canCreate) return;
+                setCreateOpen(true);
+              }}
             >
               <PlusIcon className="size-4" />
               New
@@ -240,6 +247,8 @@ export default function PlanogramsPageClient({
             <p className="text-sm text-muted-foreground">
               {WORKSPACE_READ_ONLY_HINT}
             </p>
+          ) : createBlockedReason ? (
+            <p className="text-sm text-muted-foreground">{createBlockedReason}</p>
           ) : null
         }
         search={
@@ -336,11 +345,12 @@ export default function PlanogramsPageClient({
               <EmptyTitle>No planograms yet</EmptyTitle>
               <EmptyDescription>
                 {canWrite
-                  ? "Create a planogram to start placing SKUs on shelves."
+                  ? createBlockedReason ??
+                    "Create a planogram to start placing SKUs on shelves."
                   : WORKSPACE_READ_ONLY_HINT}
               </EmptyDescription>
             </EmptyHeader>
-            {canWrite ? (
+            {canCreate ? (
               <Button
                 type="button"
                 size="sm"
@@ -394,7 +404,7 @@ export default function PlanogramsPageClient({
       </CatalogPageLayout>
 
       <Dialog
-        open={createOpen && canWrite}
+        open={createOpen && canCreate}
         onOpenChange={handleCreateOpenChange}
       >
         <DialogContent showCloseButton={!isCreating}>
