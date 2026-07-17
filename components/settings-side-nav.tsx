@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const settingsNav = [
   { label: "Workspace", href: "/settings", exact: true },
   { label: "Members", href: "/settings/members", exact: false },
+  { label: "Billing", href: "/settings/billing", exact: false },
   { label: "Account", href: "/settings/account", exact: false },
 ] as const;
 

@@ -23,6 +23,7 @@ import {
   canOwnAnotherWorkspace,
   countOwnedWorkspaces,
   ownedWorkspaceLimitMessage,
+  ownsUnlimitedWorkspace,
 } from "@/lib/workspaces/limits";
 import type { WorkspaceMembershipListItem } from "@/lib/workspaces/list";
 import { catalogPathAfterSwitch } from "@/lib/workspaces/switch-path";
@@ -94,7 +95,8 @@ export default function WorkspaceSwitcher({
   };
 
   const ownedCount = countOwnedWorkspaces(workspaces);
-  const canCreate = canOwnAnotherWorkspace(ownedCount);
+  const hasUnlimited = ownsUnlimitedWorkspace(workspaces);
+  const canCreate = canOwnAnotherWorkspace(ownedCount, hasUnlimited);
   const createBlockedReason = canCreate
     ? null
     : ownedWorkspaceLimitMessage();

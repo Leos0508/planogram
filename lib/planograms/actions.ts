@@ -9,6 +9,10 @@ import {
   findSkuInWorkspace,
   requireWorkspaceWrite,
 } from "@/lib/workspaces/current";
+import {
+  canCreatePlanogramOnTier,
+  freePlanogramLimitMessage,
+} from "@/lib/workspaces/limits";
 import { revalidatePath } from "next/cache";
 
 export type PlanogramItemRecord = {
@@ -248,6 +252,15 @@ export async function createPlanogram(input: {
   try {
     const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
+
+    const planogramCount = await prisma.planogram.count({
+      where: { workspaceId: access.workspace.id },
+    });
+    if (
+      !canCreatePlanogramOnTier(access.workspace.tier, planogramCount)
+    ) {
+      return { ok: false, message: freePlanogramLimitMessage() };
+    }
 
     const planogram = await prisma.planogram.create({
       data: {

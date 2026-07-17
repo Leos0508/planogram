@@ -28,6 +28,7 @@ async function persistActiveWorkspace(
   revalidatePath("/settings");
   revalidatePath("/settings/members");
   revalidatePath("/settings/account");
+  revalidatePath("/settings/billing");
 }
 
 /**
@@ -91,11 +92,16 @@ export async function createWorkspace(input: {
     const name = input.name.trim();
     const userId = session.user.id;
 
-    const ownedCount = await prisma.workspaceMember.count({
+    const ownedMemberships = await prisma.workspaceMember.findMany({
       where: { userId, role: WorkspaceRole.OWNER },
+      select: { workspace: { select: { tier: true } } },
     });
+    const ownedCount = ownedMemberships.length;
+    const ownsUnlimited = ownedMemberships.some(
+      (m) => m.workspace.tier === WorkspaceTier.UNLIMITED,
+    );
 
-    if (!canOwnAnotherWorkspace(ownedCount)) {
+    if (!canOwnAnotherWorkspace(ownedCount, ownsUnlimited)) {
       return { ok: false, message: ownedWorkspaceLimitMessage() };
     }
 
