@@ -2,6 +2,22 @@
 
 Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` → oldest membership. Invite accept (PLA-48) **keeps** previous active and offers **Switch to this workspace** (does not auto-switch). Navbar switcher is **PLA-45**.
 
+**Automated smoke (PLA-50):** `pnpm exec playwright test e2e/multi-workspace.spec.ts --workers=1` (CI uses `pnpm build` + `pnpm start`). Covers create → switch → settings context → sole-owner delete; invite + OWNER leave/delete gate; single-WS settings context.
+
+Catalog planogram isolation across workspaces remains in the manual checklist below.
+
+## S4 smoke checklist (manual)
+
+Run after multi-workspace changes when not relying on Playwright alone:
+
+1. Register / sign in (single membership) → settings aside shows that workspace name
+2. Create second workspace → catalogs empty; create a planogram only there
+3. Switch back → prior planograms return; second WS planograms hidden
+4. Invite another user into the second WS → they keep their home active; optional switch works
+5. As OWNER with that member present → Leave/Delete blocked with link to Members
+6. Member leaves → OWNER can delete (type name) or leave-as-sole-owner deletes
+7. Soft-cap: fourth owned workspace shows free-plan limit (optional)
+
 ## Setup
 
 1. Apply migrations and seed: `pnpm db:migrate && pnpm db:seed`
