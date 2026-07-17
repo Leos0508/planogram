@@ -1,7 +1,7 @@
 # Planogram Design System
 
-> Last updated: July 10, 2026  
-> Scope: v0.5+ UI work (catalog, settings, inspector). Keep it simple — extend shadcn, don’t reinvent.
+> Last updated: July 17, 2026  
+> Scope: v0.5+ UI work (catalog, settings, inspector, multi-workspace chrome). Keep it simple — extend shadcn, don’t reinvent.
 
 ---
 
@@ -71,6 +71,14 @@ Canvas tokens are defined in `app/globals.css` as `--canvas-valid` and `--canvas
 | Floating toolbar | `right-3 top-3`, `gap-2` |
 
 Use Tailwind spacing scale (`1` = 4px). Prefer `2`, `3`, `4` for UI; avoid arbitrary values like `p-[13px]`.
+
+### App chrome (multi-workspace)
+
+| Pattern | Guidance |
+|---------|----------|
+| Navbar workspace switcher | Outline `sm` button; truncate name (`max-w-52`); menu uses `border-border bg-background` |
+| Settings aside context | Uppercase “Settings” eyebrow (`text-xs … text-muted-foreground`) + truncated active workspace name on the next line |
+| Destructive workspace actions | Confirm dialogs; type-name for delete (match account-delete pattern) |
 
 ### Radius & borders
 

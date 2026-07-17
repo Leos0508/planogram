@@ -31,7 +31,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | TypeScript (`tsc --noEmit`) |
 | `pnpm test` | Vitest unit tests (engine) |
-| `pnpm test:e2e` | Playwright smoke (home / planograms / SKUs) |
+| `pnpm test:e2e` | Playwright smoke (auth, catalogs, settings) + multi-workspace (`e2e/multi-workspace.spec.ts`) |
 | `pnpm build` / `pnpm start` | Production build |
 
 First E2E run installs Chromium via Playwright:
