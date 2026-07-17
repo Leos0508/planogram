@@ -1,6 +1,6 @@
 # Workspace tenancy — manual test plan
 
-Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` → oldest membership. Invite accept does **not** switch active (stay on previous workspace until switcher / `setActiveWorkspace`). Navbar switcher is **PLA-45**.
+Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` → oldest membership. Invite accept (PLA-48) **keeps** previous active and offers **Switch to this workspace** (does not auto-switch). Navbar switcher is **PLA-45**.
 
 ## Setup
 
@@ -22,7 +22,9 @@ Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` →
 
 | Step | Expected |
 |------|----------|
-| User A accepts invite to User B’s workspace | Membership added; A’s catalogs still show A’s personal workspace |
+| User A accepts invite to User B’s workspace | Membership added; stays on A’s active; optional **Switch to B** |
+| Accept invite when already a member | Idempotent message; offer switch if B is not active |
+| Accept with only one prior membership | Same stay + optional switch; no other memberships removed |
 | Navbar workspace control | Menu lists memberships + **Create workspace** |
 | Create workspace | Dialog → new empty OWNER workspace becomes active; catalogs empty |
 | Soft-cap (3 owned) | Fourth create shows clear free-plan limit error |

@@ -24,9 +24,11 @@ export default async function InvitePage({
     <main className="flex flex-1 items-center justify-center p-4">
       <InviteAcceptClient
         token={token}
+        workspaceId={preview.data.workspaceId}
         workspaceName={preview.data.workspaceName}
         expired={preview.data.expired}
         alreadyMember={preview.data.alreadyMember}
+        isJoinedActive={preview.data.isJoinedActive}
       />
     </main>
   );
