@@ -12,7 +12,7 @@ export default async function SettingsAccountPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: access.workspace.user.id },
-    select: { name: true, email: true },
+    select: { name: true, email: true, passwordHash: true },
   });
 
   if (!user) {
@@ -48,6 +48,7 @@ export default async function SettingsAccountPage() {
         key={`${access.workspace.id}-${deletion.data.blockers.length}-${deletion.data.transferCandidates.length}`}
         initialName={user.name}
         email={user.email}
+        hasPassword={Boolean(user.passwordHash)}
         deletion={deletion.data}
       />
     </div>

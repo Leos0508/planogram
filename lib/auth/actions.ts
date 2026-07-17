@@ -3,11 +3,10 @@
 import { hash } from "bcryptjs";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-shared";
 import { prisma } from "@/lib/prisma";
 import { createWorkspaceForUser } from "@/lib/workspaces/bootstrap";
 import { writeActiveWorkspaceCookie } from "@/lib/workspaces/cookie";
-
-const MIN_PASSWORD_LENGTH = 8;
 
 export type AuthActionState = {
   error?: string;

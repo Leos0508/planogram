@@ -19,16 +19,19 @@ import {
   transferWorkspaceOwnership,
   type AccountDeletionStatus,
 } from "@/lib/account/actions";
+import { ChangePasswordForm } from "@/components/change-password-form";
 import { updateDisplayName } from "@/lib/settings/actions";
 import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/settings/validation";
 
 export default function AccountSettingsForm({
   initialName,
   email,
+  hasPassword,
   deletion,
 }: {
   initialName: string | null;
   email: string;
+  hasPassword: boolean;
   deletion: AccountDeletionStatus;
 }) {
   const router = useRouter();
@@ -113,6 +116,16 @@ export default function AccountSettingsForm({
           </Button>
         </div>
       </form>
+
+      <section className="max-w-md space-y-3">
+        <div className="space-y-1">
+          <h2 className="text-sm font-medium">Password</h2>
+          <p className="text-sm text-muted-foreground">
+            Update the password for your email/password sign-in.
+          </p>
+        </div>
+        <ChangePasswordForm hasPassword={hasPassword} />
+      </section>
 
       <section className="max-w-md space-y-4 border border-destructive/30 p-4">
         <div className="space-y-1">
