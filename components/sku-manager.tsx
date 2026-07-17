@@ -1,8 +1,10 @@
 "use client";
 
+import CatalogPageLayout from "@/components/catalog-page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import {
   SKU_IMAGE_MAX_BYTES,
   validateSkuImageFile,
@@ -13,12 +15,15 @@ import {
   updateSku,
   uploadSkuImage,
 } from "@/lib/skus/actions";
+import { filterSkusByQuery } from "@/lib/skus/filter";
 import type { Sku } from "@/lib/skus/queries";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
 import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
-import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { PencilIcon, PlusIcon, SearchIcon, Trash2Icon, XIcon } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+
+const SEARCH_DEBOUNCE_MS = 250;
 
 type SkuFormState = {
   name: string;
@@ -39,6 +44,25 @@ const emptyForm = (): SkuFormState => ({
   imageFile: null,
   clearImage: false,
 });
+
+function replaceSearchParam(
+  router: ReturnType<typeof useRouter>,
+  pathname: string,
+  searchParams: URLSearchParams,
+  query: string | null,
+) {
+  const params = new URLSearchParams(searchParams.toString());
+  const trimmed = query?.trim() ?? "";
+  if (trimmed) {
+    params.set("q", trimmed);
+  } else {
+    params.delete("q");
+  }
+  const queryString = params.toString();
+  router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+    scroll: false,
+  });
+}
 
 function SkuForm({
   initial,
@@ -261,12 +285,36 @@ export default function SkuManager({
   canWrite: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"none" | "create" | "edit">("none");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState(urlQuery);
+  const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 
+  if (urlQuery !== prevUrlQuery) {
+    setPrevUrlQuery(urlQuery);
+    setSearchInput(urlQuery);
+  }
+
+  const { schedule: scheduleQueryUpdate } = useDebouncedCallback(
+    (nextQuery: string) => {
+      replaceSearchParam(router, pathname, searchParams, nextQuery);
+    },
+    SEARCH_DEBOUNCE_MS,
+  );
+
+  const filteredSkus = filterSkusByQuery(skus, urlQuery);
+  const hasActiveSearch = urlQuery.trim().length > 0;
   const editingSku = skus.find((sku) => sku.id === editingId);
+
+  const clearSearch = () => {
+    setSearchInput("");
+    replaceSearchParam(router, pathname, searchParams, "");
+  };
 
   const closeForm = () => {
     setMode("none");
@@ -370,12 +418,10 @@ export default function SkuManager({
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="font-heading text-base font-semibold uppercase tracking-wider">
-          SKUs
-        </h1>
-        {canWrite ? (
+    <CatalogPageLayout
+      title="SKUs"
+      action={
+        canWrite ? (
           <Button
             type="button"
             variant={mode === "create" ? "secondary" : "default"}
@@ -389,13 +435,56 @@ export default function SkuManager({
             <PlusIcon className="size-4" />
             New
           </Button>
-        ) : null}
-      </div>
-
-      {!canWrite ? (
-        <p className="text-sm text-muted-foreground">{WORKSPACE_READ_ONLY_HINT}</p>
-      ) : null}
-
+        ) : null
+      }
+      banner={
+        !canWrite ? (
+          <p className="text-sm text-muted-foreground">{WORKSPACE_READ_ONLY_HINT}</p>
+        ) : null
+      }
+      search={
+        <div className="relative">
+          <SearchIcon
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            id="sku-search"
+            type="text"
+            value={searchInput}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSearchInput(value);
+              scheduleQueryUpdate(value);
+            }}
+            placeholder="Search by name or code"
+            className="pr-9 pl-9"
+            aria-label="Search SKUs by name or code"
+            disabled={pending}
+          />
+          {searchInput ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="absolute top-1/2 right-1 -translate-y-1/2"
+              title="Clear search"
+              onClick={clearSearch}
+              disabled={pending}
+            >
+              <XIcon className="size-4" />
+            </Button>
+          ) : null}
+        </div>
+      }
+      alert={
+        error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null
+      }
+    >
       {canWrite && mode === "create" ? (
         <SkuForm
           key="create"
@@ -426,16 +515,16 @@ export default function SkuManager({
         />
       ) : null}
 
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
       {skus.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           {canWrite
             ? "No SKUs yet. Add products with width and height in millimeters."
+            : "No SKUs in this workspace."}
+        </p>
+      ) : filteredSkus.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {hasActiveSearch
+            ? `No SKUs match “${urlQuery.trim()}”. Try a different name or code, or clear the search.`
             : "No SKUs in this workspace."}
         </p>
       ) : (
@@ -452,7 +541,7 @@ export default function SkuManager({
               </tr>
             </thead>
             <tbody>
-              {skus.map((sku) => (
+              {filteredSkus.map((sku) => (
                 <tr key={sku.id} className="border-b last:border-b-0">
                   <td className="px-4 py-3">{sku.name}</td>
                   <td className="px-4 py-3 font-mono text-xs">{sku.sku}</td>
@@ -495,6 +584,6 @@ export default function SkuManager({
           </table>
         </div>
       )}
-    </div>
+    </CatalogPageLayout>
   );
 }
