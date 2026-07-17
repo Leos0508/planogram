@@ -1,5 +1,6 @@
 "use server";
 
+import { delIfOwnedSkuBlob, putSkuImage, validateSkuImageFile } from "@/lib/blob/sku-image";
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
@@ -61,6 +62,33 @@ function validateSkuInput(input: {
   return null;
 }
 
+export async function uploadSkuImage(
+  formData: FormData,
+): Promise<ActionResult<{ url: string }>> {
+  try {
+    const access = await requireWorkspaceWrite();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const file = formData.get("file");
+    if (!(file instanceof File) || file.size === 0) {
+      return { ok: false, message: "Image file is required" };
+    }
+
+    const validationError = validateSkuImageFile(file);
+    if (validationError) return { ok: false, message: validationError };
+
+    const { url } = await putSkuImage(access.workspace.id, file);
+    return { ok: true, data: { url } };
+  } catch (error) {
+    console.error("[uploadSkuImage]", error);
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Failed to upload image";
+    return { ok: false, message };
+  }
+}
+
 export async function createSku(input: {
   name: string;
   sku: string;
@@ -116,6 +144,9 @@ export async function updateSku(input: {
     const existing = await findSkuInWorkspace(input.id, access.workspace.id);
     if (!existing) return { ok: false, message: "SKU not found" };
 
+    const nextImageUrl = normalizeImageUrl(input.imageUrl);
+    const previousImageUrl = existing.imageUrl;
+
     const updated = await prisma.sKU.update({
       where: { id: input.id },
       data: {
@@ -123,9 +154,13 @@ export async function updateSku(input: {
         sku: input.sku.trim(),
         width: Math.round(input.width),
         height: Math.round(input.height),
-        imageUrl: normalizeImageUrl(input.imageUrl),
+        imageUrl: nextImageUrl,
       },
     });
+
+    if (previousImageUrl && previousImageUrl !== nextImageUrl) {
+      await delIfOwnedSkuBlob(previousImageUrl, access.workspace.id);
+    }
 
     revalidatePath("/skus");
     revalidatePath("/planograms");
@@ -160,6 +195,7 @@ export async function deleteSku(input: {
     }
 
     await prisma.sKU.delete({ where: { id: input.id } });
+    await delIfOwnedSkuBlob(sku.imageUrl, access.workspace.id);
 
     revalidatePath("/skus");
     revalidatePath("/planograms");

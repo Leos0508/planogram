@@ -3,13 +3,22 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createSku, deleteSku, updateSku } from "@/lib/skus/actions";
+import {
+  SKU_IMAGE_MAX_BYTES,
+  validateSkuImageFile,
+} from "@/lib/blob/sku-image-shared";
+import {
+  createSku,
+  deleteSku,
+  updateSku,
+  uploadSkuImage,
+} from "@/lib/skus/actions";
 import type { Sku } from "@/lib/skus/queries";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
 import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 type SkuFormState = {
   name: string;
@@ -17,6 +26,8 @@ type SkuFormState = {
   width: string;
   height: string;
   imageUrl: string;
+  imageFile: File | null;
+  clearImage: boolean;
 };
 
 const emptyForm = (): SkuFormState => ({
@@ -25,6 +36,8 @@ const emptyForm = (): SkuFormState => ({
   width: "",
   height: "",
   imageUrl: "",
+  imageFile: null,
+  clearImage: false,
 });
 
 function SkuForm({
@@ -41,6 +54,22 @@ function SkuForm({
   pending: boolean;
 }) {
   const [values, setValues] = useState(initial);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+    };
+  }, [localPreview]);
+
+  const replaceLocalPreview = (file: File | null) => {
+    setLocalPreview(file ? URL.createObjectURL(file) : null);
+  };
+
+  const previewSrc =
+    localPreview ??
+    (!values.clearImage && values.imageUrl ? values.imageUrl : null);
 
   return (
     <form
@@ -102,20 +131,96 @@ function SkuForm({
           />
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <Label htmlFor="sku-image-url">Image URL (optional)</Label>
+          <Label htmlFor="sku-image-file">Image (optional)</Label>
+          <Input
+            id="sku-image-file"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={pending}
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              if (!file) {
+                setFileError(null);
+                replaceLocalPreview(null);
+                setValues((prev) => ({ ...prev, imageFile: null }));
+                return;
+              }
+              const error = validateSkuImageFile(file);
+              if (error) {
+                setFileError(error);
+                event.target.value = "";
+                replaceLocalPreview(null);
+                setValues((prev) => ({ ...prev, imageFile: null }));
+                return;
+              }
+              setFileError(null);
+              replaceLocalPreview(file);
+              setValues((prev) => ({
+                ...prev,
+                imageFile: file,
+                clearImage: false,
+              }));
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            JPEG, PNG, or WebP · max {SKU_IMAGE_MAX_BYTES / (1024 * 1024)} MB
+          </p>
+          {fileError ? (
+            <p className="text-sm text-destructive" role="alert">
+              {fileError}
+            </p>
+          ) : null}
+          {previewSrc ? (
+            <div className="mt-1 flex items-start gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewSrc}
+                alt="SKU preview"
+                className="size-16 border object-contain bg-muted/30"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pending}
+                onClick={() => {
+                  setFileError(null);
+                  replaceLocalPreview(null);
+                  setValues((prev) => ({
+                    ...prev,
+                    imageFile: null,
+                    imageUrl: "",
+                    clearImage: true,
+                  }));
+                }}
+              >
+                Remove image
+              </Button>
+            </div>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="sku-image-url">Or paste image URL</Label>
           <Input
             id="sku-image-url"
             type="url"
             placeholder="https://…"
-            value={values.imageUrl}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, imageUrl: event.target.value }))
-            }
+            value={values.clearImage ? "" : values.imageUrl}
+            disabled={pending || Boolean(values.imageFile)}
+            onChange={(event) => {
+              replaceLocalPreview(null);
+              setValues((prev) => ({
+                ...prev,
+                imageUrl: event.target.value,
+                clearImage: false,
+                imageFile: null,
+              }));
+            }}
           />
         </div>
       </div>
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button type="submit" size="sm" disabled={pending || Boolean(fileError)}>
           {submitLabel}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onCancel}>
@@ -139,7 +244,11 @@ function parseForm(values: SkuFormState) {
       sku: values.sku.trim(),
       width,
       height,
-      imageUrl: values.imageUrl.trim() || null,
+      imageUrl: values.clearImage
+        ? null
+        : values.imageUrl.trim() || null,
+      imageFile: values.imageFile,
+      clearImage: values.clearImage,
     },
   };
 }
@@ -165,6 +274,19 @@ export default function SkuManager({
     setError(null);
   };
 
+  const resolveImageUrl = async (
+    parsed: ReturnType<typeof parseForm> & { ok: true },
+  ): Promise<{ ok: true; imageUrl: string | null } | { ok: false; message: string }> => {
+    if (parsed.data.imageFile) {
+      const formData = new FormData();
+      formData.set("file", parsed.data.imageFile);
+      const upload = await uploadSkuImage(formData);
+      if (!upload.ok) return { ok: false, message: upload.message };
+      return { ok: true, imageUrl: upload.data.url };
+    }
+    return { ok: true, imageUrl: parsed.data.imageUrl };
+  };
+
   const handleCreate = (values: SkuFormState) => {
     if (!canWrite) return;
     const parsed = parseForm(values);
@@ -175,7 +297,19 @@ export default function SkuManager({
 
     setError(null);
     startTransition(async () => {
-      const result = await createSku(parsed.data);
+      const image = await resolveImageUrl(parsed);
+      if (!image.ok) {
+        setError(image.message);
+        return;
+      }
+
+      const result = await createSku({
+        name: parsed.data.name,
+        sku: parsed.data.sku,
+        width: parsed.data.width,
+        height: parsed.data.height,
+        imageUrl: image.imageUrl,
+      });
       if (!result.ok) {
         setError(result.message);
         return;
@@ -196,7 +330,20 @@ export default function SkuManager({
 
     setError(null);
     startTransition(async () => {
-      const result = await updateSku({ id: editingId, ...parsed.data });
+      const image = await resolveImageUrl(parsed);
+      if (!image.ok) {
+        setError(image.message);
+        return;
+      }
+
+      const result = await updateSku({
+        id: editingId,
+        name: parsed.data.name,
+        sku: parsed.data.sku,
+        width: parsed.data.width,
+        height: parsed.data.height,
+        imageUrl: image.imageUrl,
+      });
       if (!result.ok) {
         setError(result.message);
         return;
@@ -251,6 +398,7 @@ export default function SkuManager({
 
       {canWrite && mode === "create" ? (
         <SkuForm
+          key="create"
           initial={emptyForm()}
           submitLabel="Create SKU"
           onSubmit={handleCreate}
@@ -261,12 +409,15 @@ export default function SkuManager({
 
       {canWrite && mode === "edit" && editingSku ? (
         <SkuForm
+          key={editingSku.id}
           initial={{
             name: editingSku.name,
             sku: editingSku.sku,
             width: String(editingSku.width),
             height: String(editingSku.height),
             imageUrl: editingSku.imageUrl ?? "",
+            imageFile: null,
+            clearImage: false,
           }}
           submitLabel="Save changes"
           onSubmit={handleUpdate}
