@@ -35,6 +35,8 @@ Active workspace (PLA-43): resolved from cookie → `User.activeWorkspaceId` →
 | Delete as OWNER with others | Blocked; link to Members first (no delete-for-everyone) |
 | Delete last remaining membership | Allowed; bootstraps personal workspace (account delete is separate) |
 | Switch while on `/planograms/[id]` | Redirects to `/planograms` for the new workspace |
+| Switch while on `/settings` or `/settings/members` | Stay on route; side nav shows new WS name; members list remounts for new WS |
+| Settings shell | Aside shows active workspace name under “Settings” |
 | Clear cookie but keep `User.activeWorkspaceId` | Still resolves to that workspace |
 | Invalid cookie / DB id (left a workspace) | Falls back to oldest remaining membership |
 

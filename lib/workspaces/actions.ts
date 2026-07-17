@@ -26,6 +26,8 @@ async function persistActiveWorkspace(
   revalidatePath("/planograms");
   revalidatePath("/skus");
   revalidatePath("/settings");
+  revalidatePath("/settings/members");
+  revalidatePath("/settings/account");
 }
 
 /**

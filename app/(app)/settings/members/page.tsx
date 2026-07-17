@@ -50,10 +50,12 @@ export default async function SettingsMembersPage() {
           Members
         </h1>
         <p className="text-sm text-muted-foreground">
-          Invite collaborators and manage access.
+          Invite collaborators and manage access for{" "}
+          <span className="text-foreground">{access.workspace.name}</span>.
         </p>
       </div>
       <MembersSettingsClient
+        key={access.workspace.id}
         members={membersResult.data}
         activeInvite={inviteView}
         canManage={canManage}
