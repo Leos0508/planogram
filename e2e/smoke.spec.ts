@@ -23,7 +23,10 @@ test.describe("smoke", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.getByRole("navigation").getByRole("link", { name: "Planograms" }).click();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Planograms" })
+      .click();
     await expect(page).toHaveURL(/\/login/);
   });
 
@@ -36,7 +39,8 @@ test.describe("smoke", () => {
 
   test("login page has no app navbar", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("navigation")).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Legal" })).toHaveCount(1);
   });
 });
 
@@ -45,7 +49,10 @@ test.describe("authenticated smoke", () => {
 
   test("planograms page is reachable from nav", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("navigation").getByRole("link", { name: "Planograms" }).click();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Planograms" })
+      .click();
     await expect(page).toHaveURL(/\/planograms$/);
     await expect(
       page.getByRole("heading", { name: /planograms/i }),
@@ -54,7 +61,10 @@ test.describe("authenticated smoke", () => {
 
   test("skus page is reachable from nav", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("navigation").getByRole("link", { name: "SKUs" }).click();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "SKUs" })
+      .click();
     await expect(page).toHaveURL(/\/skus$/);
     await expect(page.getByRole("heading", { name: /skus/i })).toBeVisible();
   });
@@ -74,7 +84,7 @@ test.describe("authenticated smoke", () => {
   test("settings pages are reachable from user menu", async ({ page }) => {
     await page.goto("/planograms");
     await page
-      .getByRole("navigation")
+      .getByRole("navigation", { name: "Main" })
       .getByRole("button", { name: /E2E User|e2e@test\.local|Account/ })
       .click();
     await page.getByRole("menuitem", { name: "Settings" }).click();
