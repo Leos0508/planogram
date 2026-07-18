@@ -5,6 +5,7 @@ import {
 } from "@/lib/planogram-engine/constant";
 import { itemFacingsWide } from "@/lib/planogram-engine/facings";
 import type { PlanogramLayout, PlanogramState } from "@/lib/planogram-engine/types";
+import { printHtmlDocument } from "@/lib/planogram-export/print-html";
 
 export type ExportSku = {
   name: string;
@@ -123,10 +124,8 @@ export function downloadPlanogramSvg(svg: string, filename: string) {
 }
 
 export function printPlanogramSvg(svg: string, title: string) {
-  const popup = window.open("", "_blank", "noopener,noreferrer");
-  if (!popup) return false;
-
-  popup.document.write(`<!DOCTYPE html>
+  const markup = svg.replace(/^<\?xml[^>]*>\s*/u, "");
+  return printHtmlDocument(`<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -137,10 +136,6 @@ export function printPlanogramSvg(svg: string, title: string) {
       svg { max-width: 100%; height: auto; }
     </style>
   </head>
-  <body>${svg}</body>
+  <body>${markup}</body>
 </html>`);
-  popup.document.close();
-  popup.focus();
-  popup.print();
-  return true;
 }

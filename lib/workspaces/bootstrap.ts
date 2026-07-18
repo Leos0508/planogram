@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { WorkspaceRole, WorkspaceTier } from "@/generated/prisma/client";
+import { seedCatalogForWorkspace } from "@/lib/skus/seed-catalog";
 
 export type WorkspaceBootstrapInput = {
   userId: string;
@@ -76,6 +77,8 @@ export async function createWorkspaceForUser(
     where: { id: input.userId },
     data: { activeWorkspaceId: workspace.id },
   });
+
+  await seedCatalogForWorkspace(db, workspace.id);
 
   return workspace;
 }

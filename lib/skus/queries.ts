@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { QueryResult } from "@/lib/result";
+import { seedCatalogForWorkspace } from "@/lib/skus/seed-catalog";
 import { requireWorkspace } from "@/lib/workspaces/current";
 
 export type Sku = {
@@ -19,6 +20,8 @@ export async function getSkus(): Promise<QueryResult<Sku[]>> {
     if (!access.ok) {
       return { ok: false, code: "NOT_FOUND", message: access.message };
     }
+
+    await seedCatalogForWorkspace(prisma, access.workspace.id);
 
     const skus = await prisma.sKU.findMany({
       where: { workspaceId: access.workspace.id },
