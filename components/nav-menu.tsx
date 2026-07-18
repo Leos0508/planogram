@@ -56,7 +56,10 @@ export default function NavMenu({
 
   return (
     <header className="shrink-0 border-b">
-      <nav className="flex h-16 w-full items-center gap-2 px-4">
+      <nav
+        aria-label="Main"
+        className="flex h-16 w-full items-center gap-2 px-4"
+      >
         <Link
           href="/"
           className="font-heading text-sm font-semibold tracking-tight text-foreground"

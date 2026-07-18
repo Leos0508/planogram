@@ -8,7 +8,7 @@ function namePattern(name: string): RegExp {
 
 async function activeWorkspaceName(page: Page): Promise<string> {
   const switcher = page
-    .getByRole("navigation")
+    .getByRole("navigation", { name: "Main" })
     .getByRole("button", { name: "Switch workspace" });
   const label = switcher.locator("span").first();
   return ((await label.textContent()) ?? "").trim();
@@ -16,13 +16,15 @@ async function activeWorkspaceName(page: Page): Promise<string> {
 
 async function expectActiveWorkspace(page: Page, name: string) {
   await expect(
-    page.getByRole("navigation").getByRole("button", { name: "Switch workspace" }),
+    page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("button", { name: "Switch workspace" }),
   ).toContainText(name, { ignoreCase: true });
 }
 
 async function openWorkspaceMenu(page: Page) {
   await page
-    .getByRole("navigation")
+    .getByRole("navigation", { name: "Main" })
     .getByRole("button", { name: "Switch workspace" })
     .click();
   await expect(page.getByRole("menu", { name: "Workspaces" })).toBeVisible();
