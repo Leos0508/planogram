@@ -1,6 +1,7 @@
 import AccountSettingsForm from "@/components/account-settings-form";
 import { getAccountDeletionStatus } from "@/lib/account/actions";
 import { prisma } from "@/lib/prisma";
+import { getSupportEmail } from "@/lib/support";
 import { requireWorkspace } from "@/lib/workspaces/current";
 import { redirect } from "next/navigation";
 
@@ -49,6 +50,7 @@ export default async function SettingsAccountPage() {
         initialName={user.name}
         email={user.email}
         hasPassword={Boolean(user.passwordHash)}
+        supportEmail={getSupportEmail()}
         deletion={deletion.data}
       />
     </div>

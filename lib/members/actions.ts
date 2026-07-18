@@ -6,6 +6,8 @@ import {
   WorkspaceRole,
 } from "@/generated/prisma/client";
 import { requireSessionUser } from "@/lib/auth/session";
+import { getAppBaseUrl } from "@/lib/billing/stripe";
+import { sendEmail } from "@/lib/email/send";
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import { isInvitationActive } from "@/lib/workspaces/capabilities";
@@ -18,6 +20,31 @@ import { shouldOfferSwitchToJoined } from "@/lib/members/invite";
 import { revalidatePath } from "next/cache";
 
 const INVITE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+function normalizeInviteEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function isValidInviteEmail(email: string): boolean {
+  // Practical check — not full RFC.
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function toActiveInvite(invite: {
+  id: string;
+  token: string;
+  expiresAt: Date;
+  defaultAccess: WorkspaceAccess;
+  redeemedAt: Date | null;
+}): ActiveInvite {
+  return {
+    id: invite.id,
+    token: invite.token,
+    expiresAt: invite.expiresAt,
+    defaultAccess: invite.defaultAccess,
+    redeemedAt: invite.redeemedAt,
+  };
+}
 
 export type MemberListItem = {
   id: string;
@@ -146,6 +173,76 @@ export async function createInviteLink(): Promise<
     console.error("[createInviteLink]", error);
     return { ok: false, message: "Failed to create invite link." };
   }
+}
+
+/**
+ * Ensure an active invite exists (reuse or create), then email the accept link.
+ * Copy-link flow is unchanged.
+ */
+export async function sendInviteEmail(input: {
+  email: string;
+}): Promise<ActionResult<{ invite: ActiveInvite; emailedTo: string }>> {
+  const email = normalizeInviteEmail(input.email);
+  if (!email || !isValidInviteEmail(email)) {
+    return { ok: false, message: "Enter a valid email address." };
+  }
+
+  try {
+    const access = await requireWorkspaceOwner();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    let invite = await prisma.workspaceInvitation.findFirst({
+      where: {
+        workspaceId: access.workspace.id,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!invite) {
+      invite = await prisma.workspaceInvitation.create({
+        data: {
+          token: randomBytes(24).toString("base64url"),
+          workspaceId: access.workspace.id,
+          createdById: access.workspace.user.id,
+          expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+          defaultAccess: WorkspaceAccess.FULL,
+        },
+      });
+      revalidatePath("/settings/members");
+    }
+
+    const active = toActiveInvite(invite);
+    const acceptUrl = `${getAppBaseUrl()}/invite/${active.token}`;
+    const workspaceName = access.workspace.name;
+    const inviter =
+      access.workspace.user.name?.trim() || access.workspace.user.email;
+
+    const sent = await sendEmail({
+      to: email,
+      subject: `Join ${workspaceName} on Planogram`,
+      text: `${inviter} invited you to join “${workspaceName}” on Planogram.\n\nAccept: ${acceptUrl}\n\nThis link expires ${active.expiresAt.toUTCString()}.`,
+      html: `<p><strong>${escapeHtml(inviter)}</strong> invited you to join <strong>${escapeHtml(workspaceName)}</strong> on Planogram.</p><p><a href="${acceptUrl}">Accept invite</a></p><p style="color:#666;font-size:12px">Or paste this link: ${acceptUrl}</p><p style="color:#666;font-size:12px">Expires ${escapeHtml(active.expiresAt.toUTCString())}.</p>`,
+    });
+
+    if (!sent.ok) {
+      return { ok: false, message: sent.message };
+    }
+
+    return { ok: true, data: { invite: active, emailedTo: email } };
+  } catch (error) {
+    console.error("[sendInviteEmail]", error);
+    return { ok: false, message: "Failed to send invite email." };
+  }
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 export async function revokeInviteLink(input: {

@@ -84,6 +84,23 @@ export function LoginForm() {
           Register
         </Link>
       </p>
+      <p className="text-xs text-muted-foreground">
+        By signing in you agree to our{" "}
+        <Link
+          href="/terms"
+          className="underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link
+          href="/privacy"
+          className="underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Privacy Policy
+        </Link>
+        .
+      </p>
     </form>
   );
 }
@@ -142,6 +159,23 @@ export function RegisterForm() {
         >
           Sign in
         </Link>
+      </p>
+      <p className="text-xs text-muted-foreground">
+        By creating an account you agree to our{" "}
+        <Link
+          href="/terms"
+          className="underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link
+          href="/privacy"
+          className="underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Privacy Policy
+        </Link>
+        .
       </p>
     </form>
   );

@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { WorkspaceAccess, WorkspaceRole } from "@/generated/prisma/enums";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/toast-provider";
 import {
   createInviteLink,
   removeMember,
   revokeInviteLink,
+  sendInviteEmail,
   updateMemberAccess,
   type MemberListItem,
 } from "@/lib/members/actions";
@@ -38,6 +41,28 @@ export default function MembersSettingsClient({
   const [pending, startTransition] = useTransition();
   const [members, setMembers] = useState(initialMembers);
   const [invite, setInvite] = useState(initialInvite);
+  const [inviteEmail, setInviteEmail] = useState("");
+
+  const onSendInviteEmail = (event: FormEvent) => {
+    event.preventDefault();
+    startTransition(async () => {
+      const result = await sendInviteEmail({ email: inviteEmail });
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+      setInvite({
+        id: result.data.invite.id,
+        token: result.data.invite.token,
+        expiresAtLabel: new Date(
+          result.data.invite.expiresAt,
+        ).toLocaleString(),
+      });
+      toast.success(`Invite sent to ${result.data.emailedTo}`);
+      setInviteEmail("");
+      router.refresh();
+    });
+  };
 
   const onCreateInvite = () => {
     startTransition(async () => {
@@ -120,6 +145,39 @@ export default function MembersSettingsClient({
 
   return (
     <div className="space-y-8">
+      {canManage ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-sm font-medium">Invite by email</h2>
+            <p className="text-sm text-muted-foreground">
+              Send an accept link to a teammate. They must sign in, then open the
+              link.
+            </p>
+          </div>
+          <form
+            onSubmit={onSendInviteEmail}
+            className="flex max-w-xl flex-col gap-3 border p-4 sm:flex-row sm:items-end"
+          >
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <Label htmlFor="invite-email">Email</Label>
+              <Input
+                id="invite-email"
+                type="email"
+                autoComplete="email"
+                placeholder="teammate@example.com"
+                value={inviteEmail}
+                disabled={pending}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" size="sm" disabled={pending || !inviteEmail.trim()}>
+              {pending ? "Sending…" : "Send invite"}
+            </Button>
+          </form>
+        </section>
+      ) : null}
+
       {canManage ? (
         <section className="space-y-3">
           <div>

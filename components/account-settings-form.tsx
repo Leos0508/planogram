@@ -27,11 +27,13 @@ export default function AccountSettingsForm({
   initialName,
   email,
   hasPassword,
+  supportEmail,
   deletion,
 }: {
   initialName: string | null;
   email: string;
   hasPassword: boolean;
+  supportEmail: string | null;
   deletion: AccountDeletionStatus;
 }) {
   const router = useRouter();
@@ -126,6 +128,21 @@ export default function AccountSettingsForm({
         </div>
         <ChangePasswordForm hasPassword={hasPassword} />
       </section>
+
+      {supportEmail ? (
+        <section className="max-w-md space-y-1">
+          <h2 className="text-sm font-medium">Support</h2>
+          <p className="text-sm text-muted-foreground">
+            Need help?{" "}
+            <a
+              href={`mailto:${supportEmail}`}
+              className="text-foreground underline-offset-4 hover:underline"
+            >
+              {supportEmail}
+            </a>
+          </p>
+        </section>
+      ) : null}
 
       <section className="max-w-md space-y-4 border border-destructive/30 p-4">
         <div className="space-y-1">
