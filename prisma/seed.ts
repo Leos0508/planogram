@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { SEED_CATALOG_SKUS } from "../lib/skus/seed-catalog";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -25,29 +26,7 @@ async function main() {
     },
   });
 
-  // --- SKUs (Phase 0: hardcoded footprints) ---
-  const skus = [
-    {
-      sku: "COKE-355",
-      name: "Coca-Cola 355ml Can",
-      width: 65,
-      height: 122,
-    },
-    {
-      sku: "WATER-500",
-      name: "Water Bottle 500ml",
-      width: 70,
-      height: 210,
-    },
-    {
-      sku: "CHIPS-150",
-      name: "Potato Chips 150g",
-      width: 180,
-      height: 280,
-    },
-  ];
-
-  for (const data of skus) {
+  for (const data of SEED_CATALOG_SKUS) {
     await prisma.sKU.upsert({
       where: {
         workspaceId_sku: {
@@ -87,7 +66,7 @@ async function main() {
   });
 
   console.log(`Seeded workspace ${workspace.slug}`);
-  console.log(`Seeded ${skus.length} SKUs`);
+  console.log(`Seeded ${SEED_CATALOG_SKUS.length} SKUs`);
   console.log(`Demo planogram: ${demo.name} (${demo.shelves.length} shelves)`);
 }
 

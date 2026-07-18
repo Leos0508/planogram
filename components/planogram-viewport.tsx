@@ -3,7 +3,13 @@
 import EditorCommandsPanel from "@/components/editor-commands-panel";
 import { Button } from "@/components/ui/button";
 import type { ViewportTransform } from "@/hooks/use-canvas-viewport";
-import { Maximize2Icon, DownloadIcon, Redo2Icon, Undo2Icon } from "lucide-react";
+import {
+  FileTextIcon,
+  Maximize2Icon,
+  DownloadIcon,
+  Redo2Icon,
+  Undo2Icon,
+} from "lucide-react";
 
 export default function PlanogramViewport({
   viewportRef,
@@ -14,6 +20,7 @@ export default function PlanogramViewport({
   onUndo,
   onRedo,
   onExportSvg,
+  onExportPdf,
   children,
 }: {
   viewportRef: React.RefObject<HTMLDivElement | null>;
@@ -24,6 +31,7 @@ export default function PlanogramViewport({
   onUndo?: () => void;
   onRedo?: () => void;
   onExportSvg?: () => void;
+  onExportPdf?: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -81,6 +89,18 @@ export default function PlanogramViewport({
             title="Download SVG export"
           >
             <DownloadIcon className="size-4" />
+          </Button>
+        ) : null}
+        {onExportPdf ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon-sm"
+            className="pointer-events-auto shadow-sm"
+            onClick={onExportPdf}
+            title="Export PDF (print / Save as PDF)"
+          >
+            <FileTextIcon className="size-4" />
           </Button>
         ) : null}
         <Button

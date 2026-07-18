@@ -48,6 +48,10 @@ import {
 import type { PlanogramDetail } from "@/lib/planograms/queries";
 import { planogramStructureKey } from "@/lib/planogram-editor/sync-key";
 import {
+  printPlanogramExportHtml,
+  renderPlanogramExportHtml,
+} from "@/lib/planogram-export/render-export-html";
+import {
   downloadPlanogramSvg,
   renderPlanogramSvg,
 } from "@/lib/planogram-export/render-svg";
@@ -673,18 +677,28 @@ export default function PlanogramEditor({
     [canWrite, drag, planogram.id, selectedItemId, toast],
   );
 
-  const handleExportSvg = useCallback(() => {
-    const exportLayout = computePlanogramLayoutCached(stateRef.current);
-    const exportSkuById = new Map(
+  const buildExportSkuById = useCallback(() => {
+    return new Map(
       skus.map((sku) => [
         sku.id,
-        { name: sku.name, imageUrl: sku.imageUrl },
+        {
+          id: sku.id,
+          name: sku.name,
+          sku: sku.sku,
+          width: sku.width,
+          height: sku.height,
+          imageUrl: sku.imageUrl,
+        },
       ]),
     );
+  }, [skus]);
+
+  const handleExportSvg = useCallback(() => {
+    const exportLayout = computePlanogramLayoutCached(stateRef.current);
     const svg = renderPlanogramSvg({
       layout: exportLayout,
       state: stateRef.current,
-      skuById: exportSkuById,
+      skuById: buildExportSkuById(),
       planogramName: planogram.name,
     });
     const slug = planogram.name
@@ -693,7 +707,21 @@ export default function PlanogramEditor({
       .replaceAll(/[^a-z0-9]+/g, "-")
       .replaceAll(/^-|-$/g, "");
     downloadPlanogramSvg(svg, `${slug || "planogram"}.svg`);
-  }, [planogram.name, skus]);
+  }, [buildExportSkuById, planogram.name]);
+
+  const handleExportPdf = useCallback(() => {
+    const exportLayout = computePlanogramLayoutCached(stateRef.current);
+    const html = renderPlanogramExportHtml({
+      layout: exportLayout,
+      state: stateRef.current,
+      skuById: buildExportSkuById(),
+      planogramName: planogram.name,
+    });
+    const opened = printPlanogramExportHtml(html);
+    if (!opened) {
+      toast.error("Allow popups to export PDF.");
+    }
+  }, [buildExportSkuById, planogram.name, toast]);
 
   const nudgeSelected = useCallback(
     (deltaMm: number) => {
@@ -914,6 +942,7 @@ export default function PlanogramEditor({
         onUndo={canWrite ? () => void handleUndo() : undefined}
         onRedo={canWrite ? () => void handleRedo() : undefined}
         onExportSvg={handleExportSvg}
+        onExportPdf={handleExportPdf}
       >
         <PlanogramCanvas
           canvasRef={canvasRef}
