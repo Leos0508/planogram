@@ -440,6 +440,8 @@ export async function updatePlanogramShelfMinWidth(input: {
   planogramId: string;
   shelfId: string;
   minContentWidthMm: number;
+  /** Shared fixture width: write the same min to every shelf on the planogram. */
+  syncAllShelves?: boolean;
 }): Promise<ActionResult<PlanogramShelfRecord>> {
   const minContentWidthMm = Math.round(input.minContentWidthMm);
   if (minContentWidthMm < 1) {
@@ -460,6 +462,19 @@ export async function updatePlanogramShelfMinWidth(input: {
       where: { id: input.shelfId, planogramId: input.planogramId },
     });
     if (!shelf) return { ok: false, message: "Shelf not found" };
+
+    if (input.syncAllShelves) {
+      await prisma.planogramShelf.updateMany({
+        where: { planogramId: input.planogramId },
+        data: { minContentWidthMm },
+      });
+      const updated = await prisma.planogramShelf.findFirst({
+        where: { id: input.shelfId, planogramId: input.planogramId },
+      });
+      if (!updated) return { ok: false, message: "Shelf not found" };
+      revalidatePath(`/planograms/${input.planogramId}`);
+      return { ok: true, data: updated };
+    }
 
     const updated = await prisma.planogramShelf.update({
       where: { id: input.shelfId },

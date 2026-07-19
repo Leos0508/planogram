@@ -2,6 +2,7 @@
 
 import {
   CANVAS_LABEL_PADDING_PX,
+  computeContentWidthMm,
   minContentWidthFloorMm,
   pointerPxToMm,
   type PlanogramState,
@@ -9,11 +10,20 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type ShelfWidthResizeState = {
+  /** Handle that started the drag (any shelf; width applies to all). */
   shelfId: string;
   minContentWidthMm: number;
 };
 
-/** v1: primary handle is the shelf right edge (`ew-resize`). */
+function sharedWidthFloorMm(state: PlanogramState): number {
+  let floor = 0;
+  for (const shelf of state.shelves) {
+    floor = Math.max(floor, minContentWidthFloorMm(shelf.items));
+  }
+  return floor;
+}
+
+/** v1: primary handle is the shelf right edge (`ew-resize`). Shared fixture width. */
 export function useShelfWidthResize({
   clientToCanvasLocal,
   state,
@@ -52,18 +62,14 @@ export function useShelfWidthResize({
     (
       clientX: number,
       clientY: number,
-      shelfId: string,
       startMin: number,
       startPointerXMm: number,
     ) => {
       const pointerX = pointerPlanogramX(clientX, clientY);
       if (pointerX === null) return null;
 
-      const shelf = stateRef.current.shelves.find((row) => row.id === shelfId);
-      if (!shelf) return null;
-
       const delta = pointerX - startPointerXMm;
-      const floor = minContentWidthFloorMm(shelf.items);
+      const floor = sharedWidthFloorMm(stateRef.current);
       return Math.max(floor, Math.round(startMin + delta));
     },
     [pointerPlanogramX],
@@ -82,14 +88,14 @@ export function useShelfWidthResize({
       const startPointerXMm = pointerPlanogramX(event.clientX, event.clientY);
       if (startPointerXMm === null) return;
 
-      const startMin = shelf.minContentWidthMm;
+      // Visual edge is shared content width, not this shelf's lagging min.
+      const startMin = computeContentWidthMm(stateRef.current.shelves);
       document.body.style.cursor = "ew-resize";
 
       const onPointerMove = (moveEvent: PointerEvent) => {
         const nextMin = computeMin(
           moveEvent.clientX,
           moveEvent.clientY,
-          shelfId,
           startMin,
           startPointerXMm,
         );
@@ -106,7 +112,6 @@ export function useShelfWidthResize({
         const nextMin = computeMin(
           upEvent.clientX,
           upEvent.clientY,
-          shelfId,
           startMin,
           startPointerXMm,
         );

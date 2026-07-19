@@ -194,4 +194,18 @@ export function setShelfMinContentWidthInState(
   };
 }
 
+/** Shared fixture width: all shelves use the same minContentWidthMm. */
+export function setAllShelvesMinContentWidthInState(
+  state: PlanogramState,
+  minContentWidthMm: number,
+): PlanogramState {
+  return {
+    ...state,
+    shelves: state.shelves.map((shelf) => ({
+      ...shelf,
+      minContentWidthMm,
+    })),
+  };
+}
+
 export type { PlanogramHistoryEntry };
