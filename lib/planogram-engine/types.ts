@@ -82,6 +82,13 @@ export type PlanogramLayout = {
 
 export type DropReason = "NO_SHELF" | "COLLISION" | "OUT_OF_BAND";
 
+/** Absolute planogram mm guide drawn while a snap edge is active. */
+export type AlignmentGuide = {
+  orientation: "vertical" | "horizontal";
+  /** x for vertical, y for horizontal (absolute planogram mm). */
+  positionMm: number;
+};
+
 export type DropProjection =
   | {
       ok: true;
@@ -89,6 +96,8 @@ export type DropProjection =
       x: number;
       y: number;
       previewRect: RectMm;
+      /** Active snap guides for the current projection (empty when none). */
+      guides: AlignmentGuide[];
     }
   | {
       ok: false;
@@ -97,6 +106,7 @@ export type DropProjection =
       x?: number;
       y?: number;
       previewRect?: RectMm;
+      guides?: AlignmentGuide[];
     };
 
 export type CanPlaceResult =

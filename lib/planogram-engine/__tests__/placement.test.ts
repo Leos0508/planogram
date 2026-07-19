@@ -457,4 +457,68 @@ describe("projectDrop", () => {
       expect(floating.y).toBe(25);
     }
   });
+
+  it("emits a vertical guide when X snaps to a sibling edge", () => {
+    const state = baseState([
+      {
+        id: "i1",
+        shelfId: "s1",
+        skuId: "sku1",
+        x: 0,
+        width: 100,
+        height: 200,
+        y: 0,
+        facingsWide: 1,
+      },
+    ]);
+
+    // Center a 50 mm SKU so raw left edge is near 100 (sibling right edge).
+    const result = projectDrop(state, {
+      pointerMm: { x: 123, y: 400 },
+      sku: { width: 50, height: 100 },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.x).toBe(100);
+      expect(result.guides).toEqual(
+        expect.arrayContaining([
+          { orientation: "vertical", positionMm: 100 },
+        ]),
+      );
+    }
+  });
+
+  it("emits a horizontal floor guide when Y snaps to the shelf", () => {
+    const result = projectDrop(baseState(), {
+      pointerMm: { x: 50, y: 500 },
+      sku: { width: 100, height: 150 },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.y).toBe(0);
+      expect(result.guides).toContainEqual({
+        orientation: "horizontal",
+        positionMm: expect.any(Number),
+      });
+      const floor = result.guides.find((g) => g.orientation === "horizontal");
+      expect(floor?.positionMm).toBeDefined();
+    }
+  });
+
+  it("omits Y guide when forceFloat skips Y snap", () => {
+    const result = projectDrop(baseState(), {
+      pointerMm: { x: 50, y: 500 },
+      sku: { width: 100, height: 150 },
+      forceFloat: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.guides.every((g) => g.orientation !== "horizontal")).toBe(
+        true,
+      );
+    }
+  });
 });

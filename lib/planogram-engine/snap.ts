@@ -28,21 +28,28 @@ function footprintsOverlapX(
   return aX < b.x + bWidth && aX + aWidth > b.x;
 }
 
+export type SnapXResult = {
+  x: number;
+  /** Shelf-local x of the active snap line, if snapped. */
+  guideXMm: number | null;
+};
+
 /**
  * Snap a candidate x to nearby items on the same shelf.
  * Deterministic: sorted targets, closest edge wins, then smallest movement.
  */
-export function snapXToShelfItems(
+export function snapXToShelfItemsDetailed(
   rawX: number,
   width: number,
   others: Pick<PlanogramItem, "x" | "width" | "facingsWide">[],
   thresholdMm: number,
-): number {
+): SnapXResult {
   if (others.length === 0 || thresholdMm <= 0) {
-    return rawX;
+    return { x: rawX, guideXMm: null };
   }
 
   let bestX = rawX;
+  let bestGuideX: number | null = null;
   let bestDistance = thresholdMm + 1;
   let bestMovement = Number.POSITIVE_INFINITY;
 
@@ -73,26 +80,42 @@ export function snapXToShelfItems(
         bestDistance = distance;
         bestMovement = movement;
         bestX = snappedX;
+        bestGuideX = line;
       }
     }
   }
 
-  return bestX;
+  return { x: bestX, guideXMm: bestGuideX };
 }
+
+export function snapXToShelfItems(
+  rawX: number,
+  width: number,
+  others: Pick<PlanogramItem, "x" | "width" | "facingsWide">[],
+  thresholdMm: number,
+): number {
+  return snapXToShelfItemsDetailed(rawX, width, others, thresholdMm).x;
+}
+
+export type SnapYResult = {
+  y: number;
+  /** Shelf-local bottom y of the active snap plane, if snapped. */
+  guideLocalYMm: number | null;
+};
 
 /**
  * Snap candidate bottom y to item tops (priority A) then shelf floor (y = 0).
  * Only considers items whose X footprint overlaps the candidate.
  */
-export function snapYToShelfItems(
+export function snapYToShelfItemsDetailed(
   rawBottomY: number,
   candidate: Pick<PlanogramItem, "x" | "width" | "height" | "facingsWide">,
   others: Pick<PlanogramItem, "x" | "width" | "height" | "y" | "facingsWide">[],
   stackGap: number,
   thresholdMm: number,
-): number {
+): SnapYResult {
   if (thresholdMm <= 0) {
-    return rawBottomY;
+    return { y: rawBottomY, guideLocalYMm: null };
   }
 
   const width = itemFootprintWidth(candidate);
@@ -114,12 +137,28 @@ export function snapYToShelfItems(
   }
 
   if (bestStackDistance <= thresholdMm) {
-    return bestStackY;
+    return { y: bestStackY, guideLocalYMm: bestStackY };
   }
 
   if (Math.abs(rawBottomY) <= thresholdMm) {
-    return 0;
+    return { y: 0, guideLocalYMm: 0 };
   }
 
-  return rawBottomY;
+  return { y: rawBottomY, guideLocalYMm: null };
+}
+
+export function snapYToShelfItems(
+  rawBottomY: number,
+  candidate: Pick<PlanogramItem, "x" | "width" | "height" | "facingsWide">,
+  others: Pick<PlanogramItem, "x" | "width" | "height" | "y" | "facingsWide">[],
+  stackGap: number,
+  thresholdMm: number,
+): number {
+  return snapYToShelfItemsDetailed(
+    rawBottomY,
+    candidate,
+    others,
+    stackGap,
+    thresholdMm,
+  ).y;
 }

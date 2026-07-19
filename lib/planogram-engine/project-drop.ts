@@ -10,8 +10,12 @@ import {
 } from "./layout";
 import { computePlanogramLayoutCached } from "./layout-cache";
 import { canPlace } from "./placement";
-import { snapXToShelfItems, snapYToShelfItems } from "./snap";
+import {
+  snapXToShelfItemsDetailed,
+  snapYToShelfItemsDetailed,
+} from "./snap";
 import type {
+  AlignmentGuide,
   DropProjection,
   PlanogramShelf,
   PlanogramState,
@@ -32,6 +36,11 @@ export type ProjectDropInput = {
   viewportScale?: number;
 };
 
+type CandidateBuild = {
+  candidate: LayoutPreviewItem;
+  guides: AlignmentGuide[];
+};
+
 function buildCandidate(
   shelfId: string,
   shelfYMm: number,
@@ -39,7 +48,7 @@ function buildCandidate(
   input: ProjectDropInput,
   shelves: PlanogramShelf[],
   stackGap: number,
-): LayoutPreviewItem {
+): CandidateBuild {
   const facingsWide = input.facingsWide ?? DEFAULT_FACINGS_WIDE;
   const id = previewItemId({ id: input.excludeItemId });
   const footprintWidth = input.sku.width * facingsWide;
@@ -50,7 +59,7 @@ function buildCandidate(
   const siblings =
     shelf?.items.filter((item) => item.id !== id) ?? [];
 
-  const snappedX = snapXToShelfItems(
+  const snapX = snapXToShelfItemsDetailed(
     rawX,
     footprintWidth,
     siblings,
@@ -59,32 +68,54 @@ function buildCandidate(
 
   const rawBottomY = Math.max(0, shelfYMm - pointer.y - input.sku.height / 2);
 
-  const snappedY = input.forceFloat
-    ? rawBottomY
-    : input.y !== undefined
-      ? input.y
-      : snapYToShelfItems(
-          rawBottomY,
-          {
-            x: snappedX,
-            width: input.sku.width,
-            height: input.sku.height,
-            facingsWide,
-          },
-          siblings,
-          stackGap,
-          threshold,
-        );
+  let snappedY: number;
+  let guideLocalYMm: number | null = null;
+
+  if (input.forceFloat) {
+    snappedY = rawBottomY;
+  } else if (input.y !== undefined) {
+    snappedY = input.y;
+  } else {
+    const snapY = snapYToShelfItemsDetailed(
+      rawBottomY,
+      {
+        x: snapX.x,
+        width: input.sku.width,
+        height: input.sku.height,
+        facingsWide,
+      },
+      siblings,
+      stackGap,
+      threshold,
+    );
+    snappedY = snapY.y;
+    guideLocalYMm = snapY.guideLocalYMm;
+  }
+
+  const guides: AlignmentGuide[] = [];
+  if (snapX.guideXMm !== null) {
+    guides.push({ orientation: "vertical", positionMm: snapX.guideXMm });
+  }
+  if (guideLocalYMm !== null) {
+    // Contact plane in absolute planogram mm (shelf line − local bottom).
+    guides.push({
+      orientation: "horizontal",
+      positionMm: shelfYMm - guideLocalYMm,
+    });
+  }
 
   return {
-    id,
-    shelfId,
-    skuId: "",
-    x: snappedX,
-    width: input.sku.width,
-    height: input.sku.height,
-    y: snappedY,
-    facingsWide,
+    candidate: {
+      id,
+      shelfId,
+      skuId: "",
+      x: snapX.x,
+      width: input.sku.width,
+      height: input.sku.height,
+      y: snappedY,
+      facingsWide,
+    },
+    guides,
   };
 }
 
@@ -106,7 +137,7 @@ export function projectDrop(
     return { ok: false, reason: "NO_SHELF" };
   }
 
-  const candidate = buildCandidate(
+  const { candidate, guides } = buildCandidate(
     shelfLayout.shelfId,
     shelfLayout.yMm,
     pointer,
@@ -141,6 +172,7 @@ export function projectDrop(
       x: candidate.x,
       y: candidate.y,
       previewRect,
+      guides,
     };
   }
 
@@ -150,6 +182,7 @@ export function projectDrop(
     x: candidate.x,
     y: candidate.y,
     previewRect,
+    guides,
   };
 }
 
