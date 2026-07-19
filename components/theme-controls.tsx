@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,21 @@ const THEME_OPTIONS = [
   { value: "system", label: "System" },
 ] as const;
 
+const emptySubscribe = () => () => {};
+
+/** True after hydration — avoids next-themes SSR mismatch without setState-in-effect. */
+function useIsClient() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+}
+
 /** Account settings: Light / Dark / System preference. */
 export function ThemePreferenceSelect({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
@@ -45,11 +52,7 @@ export function ThemePreferenceSelect({ className }: { className?: string }) {
 /** Compact nav control: cycles light → dark → system. */
 export function ThemeCycleButton() {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
 
   if (!mounted) {
     return (
