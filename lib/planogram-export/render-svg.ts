@@ -21,7 +21,7 @@ function escapeXml(value: string) {
     .replaceAll("'", "&apos;");
 }
 
-/** Standalone SVG for download or print (scaffold for future PDF pipeline). */
+/** Standalone SVG for download, print, and PDF export HTML. */
 export function renderPlanogramSvg({
   layout,
   state,

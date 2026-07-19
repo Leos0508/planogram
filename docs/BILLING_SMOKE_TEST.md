@@ -57,7 +57,7 @@ If using a CLI-provisioned sandbox (`stripe sandbox create`), claim it before ex
 
 ## Live mode
 
-When ready for real payments, follow **[`docs/STRIPE_LIVE_GO_LIVE.md`](./STRIPE_LIVE_GO_LIVE.md)** (activate account, live keys, live webhook, Vercel Production env, verify Checkout → Unlimited → Portal).
+When ready for real payments, follow **[`docs/STRIPE_LIVE_GO_LIVE.md`](./STRIPE_LIVE_GO_LIVE.md)** (activate account, live keys, live webhook, Vercel Production env, verify Checkout → Unlimited → Portal). Tracked as [PLA-76](https://linear.app/planogram/issue/PLA-76/complete-stripe-live-mode-cutover).
 
 ## Out of scope
 

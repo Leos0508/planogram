@@ -2,6 +2,8 @@
 
 Error monitoring via `@sentry/nextjs`. Safe to leave unset locally — the SDK stays disabled without a DSN.
 
+**Ops cutover (Backlog):** [PLA-77](https://linear.app/planogram/issue/PLA-77/complete-sentry-production-setup) — set Production DSN and verify a test error.
+
 ## Env
 
 Add to Vercel (Production / Preview as needed) and optionally `.env.local`:
