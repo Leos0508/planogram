@@ -150,6 +150,8 @@ model User {
   emailVerified      DateTime?
   image              String?
   passwordHash       String?
+  /// Bumped on password change/reset; used to invalidate JWTs issued earlier.
+  passwordChangedAt  DateTime?
   activeWorkspaceId  String?
   accounts           Account[]
   sessions           Session[]

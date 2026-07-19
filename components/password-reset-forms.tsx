@@ -50,10 +50,12 @@ export function ForgotPasswordForm() {
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input
+          key={state.email ?? "email"}
           id="email"
           name="email"
           type="email"
           autoComplete="email"
+          defaultValue={state.email}
           required
         />
       </div>

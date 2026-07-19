@@ -8,6 +8,10 @@ function isProtectedPath(pathname: string) {
   );
 }
 
+/**
+ * Edge-safe Auth.js config (middleware). JWT password-revocation checks that
+ * need Prisma live in `auth.ts` so they do not run on the Edge runtime.
+ */
 export default {
   pages: {
     signIn: "/login",
