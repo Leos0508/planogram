@@ -68,6 +68,11 @@ export default function PlanogramCanvas({
   const ghostValid = drag?.projection.ok ?? false;
   const showCanvasGhost = Boolean(ghost);
   const draggingItemId = drag?.mode === "item" ? drag.itemId : null;
+  const guides = drag?.projection.guides ?? [];
+  const guideShelf =
+    drag?.projection.shelfId != null
+      ? layout.shelves.find((s) => s.shelfId === drag.projection.shelfId)
+      : undefined;
 
   const facingsByItemId = useMemo(() => {
     const map = new Map<string, number>();
@@ -323,6 +328,42 @@ export default function PlanogramCanvas({
             </text>
           </g>
         )}
+
+        {guides.length > 0 && guideShelf ? (
+          <g aria-hidden className="pointer-events-none">
+            {guides.map((guide, index) => {
+              if (guide.orientation === "vertical") {
+                const xPx = toCanvasPxX(guide.positionMm);
+                const y1 = toCanvasPxY(guideShelf.rowTopMm, originY);
+                const y2 = toCanvasPxY(guideShelf.yMm, originY);
+                return (
+                  <line
+                    key={`guide-v-${index}`}
+                    x1={xPx}
+                    y1={y1}
+                    x2={xPx}
+                    y2={y2}
+                    className="stroke-[var(--canvas-guide)]"
+                    strokeWidth={1}
+                  />
+                );
+              }
+
+              const yPx = toCanvasPxY(guide.positionMm, originY);
+              return (
+                <line
+                  key={`guide-h-${index}`}
+                  x1={0}
+                  y1={yPx}
+                  x2={shelfWidthPx}
+                  y2={yPx}
+                  className="stroke-[var(--canvas-guide)]"
+                  strokeWidth={1}
+                />
+              );
+            })}
+          </g>
+        ) : null}
       </svg>
     </div>
   );

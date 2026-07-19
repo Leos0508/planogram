@@ -45,8 +45,9 @@ Built on shadcn OKLCH tokens in `app/globals.css`. Do not hardcode hex/rgb in co
 | Item selected | `fill-primary/35 stroke-primary` + `strokeWidth={2}` | Active selection |
 | Ghost valid | `fill-primary/30 stroke-[var(--canvas-valid)]` | Drop preview OK |
 | Ghost invalid | `fill-destructive/15 stroke-destructive` + dashed | Drop preview blocked |
+| Alignment guide | `stroke-[var(--canvas-guide)]` | Active snap edge during drag only |
 
-Canvas tokens are defined in `app/globals.css` as `--canvas-valid` and `--canvas-shelf-active` (for future drag-over highlight).
+Canvas tokens are defined in `app/globals.css` as `--canvas-valid`, `--canvas-guide`, and `--canvas-shelf-active`.
 
 ### Typography
 
