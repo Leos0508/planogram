@@ -1,6 +1,6 @@
 # Planogram
 
-Retail shelf layout editor — place SKUs on shelves in millimeters, adjust facings, and export SVG.
+Retail shelf layout editor — place SKUs on shelves in millimeters, adjust facings, and export SVG/PDF.
 
 ## Stack
 
@@ -8,6 +8,7 @@ Retail shelf layout editor — place SKUs on shelves in millimeters, adjust faci
 - PostgreSQL + Prisma 7
 - Tailwind CSS 4 + shadcn/ui
 - Pure TypeScript placement engine (`lib/planogram-engine`)
+- Auth.js · Stripe · Resend · Vercel Blob · Sentry (optional DSN)
 
 ## Getting started
 
@@ -50,7 +51,12 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 
 ## Docs
 
-- Roadmap / backlog: [Linear — Planogram](https://linear.app/planogram/project/planogram)
+- Roadmap: [Linear — Planogram](https://linear.app/planogram/project/planogram) · [Plan 01 (complete)](https://linear.app/planogram/document/development-plan-product-ux-and-platform-plan-01-bfde90020196) · [Plan 02 (advanced)](https://linear.app/planogram/document/development-plan-advanced-product-plan-02-45e4ae89a60f)
 - Design system: [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)
-- Workspace migration: [`docs/WORKSPACE_MIGRATION.md`](docs/WORKSPACE_MIGRATION.md)
-- Workspace tenancy manual tests: [`docs/WORKSPACE_TENANCY_TEST.md`](docs/WORKSPACE_TENANCY_TEST.md)
+- Email: [`docs/EMAIL_SETUP.md`](docs/EMAIL_SETUP.md) · [`docs/EMAIL_SMOKE_TEST.md`](docs/EMAIL_SMOKE_TEST.md)
+- Billing (test): [`docs/BILLING_SMOKE_TEST.md`](docs/BILLING_SMOKE_TEST.md)
+- Stripe live cutover: [`docs/STRIPE_LIVE_GO_LIVE.md`](docs/STRIPE_LIVE_GO_LIVE.md)
+- Sentry: [`docs/SENTRY_SETUP.md`](docs/SENTRY_SETUP.md)
+- Seed SKUs: [`docs/SEED_SKU_SPECS.md`](docs/SEED_SKU_SPECS.md)
+- Blob: [`docs/BLOB_SMOKE_TEST.md`](docs/BLOB_SMOKE_TEST.md)
+- Workspace: [`docs/WORKSPACE_MIGRATION.md`](docs/WORKSPACE_MIGRATION.md) · [`docs/WORKSPACE_TENANCY_TEST.md`](docs/WORKSPACE_TENANCY_TEST.md)

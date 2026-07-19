@@ -2,6 +2,8 @@
 
 Ops path from **test** billing ([`BILLING_SMOKE_TEST.md`](./BILLING_SMOKE_TEST.md)) to **live** payments. App code is key-agnostic — this is configuration and verification only.
 
+**Ops cutover (Backlog):** [PLA-76](https://linear.app/planogram/issue/PLA-76/complete-stripe-live-mode-cutover) — execute this checklist on Production.
+
 > **Warning:** Never mix test and live. Live keys (`sk_live_`, `pk_live_`, live Price ids, live webhook secrets) must not point at test Customers or test webhook endpoints. After swapping keys, existing test Customers in the DB will not work with live Stripe — treat go-live as a clean billing cutover for production.
 
 ## Prerequisites
