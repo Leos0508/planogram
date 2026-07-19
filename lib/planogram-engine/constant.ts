@@ -16,6 +16,22 @@ export const SHELF_DROP_LINE_INSET_MM = 8;
 /** Max px distance to snap candidate edges to sibling items (screen space). */
 export const SNAP_THRESHOLD_PX = 16;
 
+/** Min pointer movement (screen px) before an on-canvas item drag activates. */
+export const DRAG_ACTIVATION_DISTANCE_PX = 4;
+
+/** True when pointer moved ≥ threshold from origin in screen space. */
+export function hasExceededDragActivationDistance(
+  originX: number,
+  originY: number,
+  clientX: number,
+  clientY: number,
+  thresholdPx = DRAG_ACTIVATION_DISTANCE_PX,
+): boolean {
+  const dx = clientX - originX;
+  const dy = clientY - originY;
+  return dx * dx + dy * dy >= thresholdPx * thresholdPx;
+}
+
 export function mmToPx(mm: number, scale = PX_PER_MM) {
   return mm * scale;
 }
