@@ -41,7 +41,8 @@ With `onboarding@resend.dev`, `to` must be **your Resend account email**. Expect
 
 1. `/forgot-password` → submit a registered email → receive reset link.
 2. Open link → set new password → sign in.
-3. Settings → Account → Change password (PLA-41) does **not** require Resend.
+3. With a second browser/session still signed in on the old password: after reset, navigating a protected page should require sign-in again (PLA-67 / `passwordChangedAt`).
+4. Settings → Account → Change password (PLA-41) does **not** require Resend; you are signed out and must sign in with the new password.
 
 ## Out of scope
 

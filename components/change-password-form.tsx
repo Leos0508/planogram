@@ -5,6 +5,7 @@ import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/toast-provider";
+import { signOutToLoginAction } from "@/lib/auth/actions";
 import { changePassword } from "@/lib/auth/password-actions";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-shared";
 
@@ -39,10 +40,12 @@ export function ChangePasswordForm({
         toast.error(result.message);
         return;
       }
-      toast.success("Password updated");
+      toast.success("Password updated. Sign in again.");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      // Current cookie + other JWTs invalidated via passwordChangedAt (PLA-67).
+      await signOutToLoginAction();
     });
   };
 

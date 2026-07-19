@@ -212,6 +212,7 @@ DNS often verifies within **15 minutes**; worst case allow up to **72 hours**, t
 - Keep **local** and **production** keys separate when possible.
 - Password-reset tokens are single-use, hashed at rest, ~1h expiry (see `lib/auth/password-actions.ts`).
 - Forgot-password UI always returns a **generic** success message (does not reveal whether the email exists).
+- **Session revocation (PLA-67):** Auth uses **JWT** sessions (`session.strategy: "jwt"`). Deleting Prisma `Session` rows alone does not clear browser cookies. On password reset/change we set `User.passwordChangedAt`. At sign-in the Node `jwt` callback stamps `pwdChangedAt` on the token from the DB; later refreshes return `null` (clear cookie) when the DB timestamp is newer. Middleware only checks the JWT signature (Edge-safe); full revocation applies on the next Node `auth()` / session refresh. Change-password also signs the current user out to `/login`.
 - Rate limits: Resend defaults are generous for our volume; watch [429](https://resend.com/docs/api-reference/errors) if you bulk-test.
 
 ---

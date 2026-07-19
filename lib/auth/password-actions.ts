@@ -19,13 +19,26 @@ import {
 export type AuthFormState = {
   error?: string;
   success?: string;
+  /** Preserved across failed forgot-password submissions (PLA-69). */
+  email?: string;
 };
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-/** Delete Auth.js / adapter Session rows (JWT sessions expire on their own). */
+/** Delete Auth.js / adapter Session rows (DB strategy). JWT revocation uses passwordChangedAt. */
 async function deleteUserSessions(userId: string): Promise<void> {
   await prisma.session.deleteMany({ where: { userId } });
+}
+
+async function bumpPasswordChangedAt(userId: string, passwordHash: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      passwordHash,
+      passwordChangedAt: new Date(),
+    },
+  });
+  await deleteUserSessions(userId);
 }
 
 export async function changePassword(input: {
@@ -66,11 +79,7 @@ export async function changePassword(input: {
     }
 
     const passwordHash = await hash(input.newPassword, 12);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash },
-    });
-    await deleteUserSessions(user.id);
+    await bumpPasswordChangedAt(user.id, passwordHash);
 
     revalidatePath("/settings/account");
     return { ok: true, data: { ok: true } };
@@ -98,7 +107,7 @@ export async function requestPasswordReset(
     "If an account exists for that email, we sent a reset link.";
 
   if (!email) {
-    return { error: "Email is required." };
+    return { error: "Email is required.", email };
   }
 
   try {
@@ -137,14 +146,18 @@ export async function requestPasswordReset(
           error: sent.message.includes("not configured")
             ? sent.message
             : "Could not send reset email. Try again later.",
+          email,
         };
       }
     }
 
-    return { success: genericSuccess };
+    return { success: genericSuccess, email };
   } catch (error) {
     console.error("[requestPasswordReset]", error);
-    return { error: "Could not process reset request. Try again later." };
+    return {
+      error: "Could not process reset request. Try again later.",
+      email,
+    };
   }
 }
 
@@ -210,7 +223,10 @@ export async function resetPasswordWithToken(
     await prisma.$transaction([
       prisma.user.update({
         where: { id: user.id },
-        data: { passwordHash },
+        data: {
+          passwordHash,
+          passwordChangedAt: new Date(),
+        },
       }),
       prisma.verificationToken.deleteMany({
         where: { identifier: record.identifier },

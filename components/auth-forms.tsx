@@ -47,10 +47,12 @@ export function LoginForm() {
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input
+          key={state.email ?? "email"}
           id="email"
           name="email"
           type="email"
           autoComplete="email"
+          defaultValue={state.email}
           required
         />
       </div>
@@ -64,7 +66,9 @@ export function LoginForm() {
             Forgot password?
           </Link>
         </div>
+        {/* Password cleared on failed login (intentional). */}
         <PasswordInput
+          key={state.error ? `pwd-${state.error}` : "password"}
           id="password"
           name="password"
           autoComplete="current-password"
@@ -120,25 +124,30 @@ export function RegisterForm() {
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Name</Label>
         <Input
+          key={state.name ?? "name"}
           id="name"
           name="name"
           type="text"
           autoComplete="name"
+          defaultValue={state.name}
         />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input
+          key={state.email ?? "email"}
           id="email"
           name="email"
           type="email"
           autoComplete="email"
+          defaultValue={state.email}
           required
         />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="password">Password</Label>
         <PasswordInput
+          key={state.error ? `pwd-${state.error}` : "password"}
           id="password"
           name="password"
           autoComplete="new-password"
