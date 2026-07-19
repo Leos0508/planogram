@@ -48,6 +48,7 @@ import {
 } from "@/lib/planograms/actions";
 import type { PlanogramDetail } from "@/lib/planograms/queries";
 import { planogramStructureKey } from "@/lib/planogram-editor/sync-key";
+import { slugifyPlanogramExportName } from "@/lib/planogram-export/filename";
 import {
   printPlanogramExportHtml,
   renderPlanogramExportHtml,
@@ -717,11 +718,8 @@ export default function PlanogramEditor({
       skuById: buildExportSkuById(),
       planogramName: planogram.name,
     });
-    const slug = planogram.name
-      .trim()
-      .toLowerCase()
-      .replaceAll(/[^a-z0-9]+/g, "-")
-      .replaceAll(/^-|-$/g, "");
+    // Keep SVG naming as `<slug>.svg` (unchanged; no planogram_ prefix).
+    const slug = slugifyPlanogramExportName(planogram.name);
     downloadPlanogramSvg(svg, `${slug || "planogram"}.svg`);
   }, [buildExportSkuById, planogram.name]);
 
