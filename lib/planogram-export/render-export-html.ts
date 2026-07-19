@@ -1,5 +1,6 @@
 import type { PlanogramLayout, PlanogramState } from "@/lib/planogram-engine/types";
 import { itemFacingsWide } from "@/lib/planogram-engine/facings";
+import { planogramPdfExportFilename } from "@/lib/planogram-export/filename";
 import { printHtmlDocument } from "@/lib/planogram-export/print-html";
 import {
   type ExportSku,
@@ -103,11 +104,14 @@ export function renderPlanogramExportHtml({
       ? `<tr><td colspan="5" class="muted">No SKUs placed on this planogram.</td></tr>`
       : "";
 
+  // Browsers use <title> as the Save-as-PDF suggested filename (PLA-72).
+  const pdfFilename = planogramPdfExportFilename(planogramName);
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>${escapeHtml(planogramName)} — PDF export</title>
+  <title>${escapeHtml(pdfFilename)}</title>
   <style>
     @page { margin: 12mm; size: A4; }
     * { box-sizing: border-box; }

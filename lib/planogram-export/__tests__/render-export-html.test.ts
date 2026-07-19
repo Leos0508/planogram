@@ -75,6 +75,7 @@ describe("renderPlanogramExportHtml", () => {
     });
 
     expect(html).toContain("Demo Bay");
+    expect(html).toContain("<title>planogram_demo-bay.pdf</title>");
     expect(html).toContain("<svg");
     expect(html).toContain("Shelf specs");
     expect(html).toContain("SKU list");
