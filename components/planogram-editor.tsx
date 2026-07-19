@@ -20,6 +20,7 @@ import {
   removeItemFromState,
   setItemFacingsInState,
   setItemsPositionsInState,
+  setAllShelvesMinContentWidthInState,
   setShelfMinContentHeightInState,
   setShelfMinContentWidthInState,
   usePlanogramHistory,
@@ -519,26 +520,42 @@ export default function PlanogramEditor({
   );
 
   const persistShelfWidthResize = useCallback(
-    async (shelfId: string, minContentWidthMm: number) => {
+    async (_shelfId: string, minContentWidthMm: number) => {
       if (!canWrite) return;
-      const shelf = stateRef.current.shelves.find((row) => row.id === shelfId);
-      if (!shelf || shelf.minContentWidthMm === minContentWidthMm) return;
+      const previous = stateRef.current.shelves.map((shelf) => ({
+        id: shelf.id,
+        minContentWidthMm: shelf.minContentWidthMm,
+      }));
+      if (
+        previous.length > 0 &&
+        previous.every((shelf) => shelf.minContentWidthMm === minContentWidthMm)
+      ) {
+        return;
+      }
 
-      const from = shelf.minContentWidthMm;
       setState((prev) =>
-        setShelfMinContentWidthInState(prev, shelfId, minContentWidthMm),
+        setAllShelvesMinContentWidthInState(prev, minContentWidthMm),
       );
 
       const response = await updatePlanogramShelfMinWidth({
         planogramId: planogram.id,
-        shelfId,
+        shelfId: previous[0]?.id ?? _shelfId,
         minContentWidthMm,
+        syncAllShelves: true,
       });
 
       if (!response.ok) {
-        setState((prev) =>
-          setShelfMinContentWidthInState(prev, shelfId, from),
-        );
+        setState((prev) => {
+          let next = prev;
+          for (const shelf of previous) {
+            next = setShelfMinContentWidthInState(
+              next,
+              shelf.id,
+              shelf.minContentWidthMm,
+            );
+          }
+          return next;
+        });
         console.error("[updatePlanogramShelfMinWidth]", response.message);
         toast.error(response.message);
       }
@@ -579,9 +596,8 @@ export default function PlanogramEditor({
       );
     }
     if (shelfWidthResize) {
-      next = setShelfMinContentWidthInState(
+      next = setAllShelvesMinContentWidthInState(
         next,
-        shelfWidthResize.shelfId,
         shelfWidthResize.minContentWidthMm,
       );
     }
