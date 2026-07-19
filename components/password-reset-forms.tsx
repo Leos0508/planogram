@@ -8,6 +8,7 @@ import {
   type AuthFormState,
 } from "@/lib/auth/password-actions";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-shared";
+import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,10 +100,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <input type="hidden" name="token" value={token} />
       <div className="flex flex-col gap-2">
         <Label htmlFor="password">New password</Label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           minLength={MIN_PASSWORD_LENGTH}
           required
@@ -110,10 +110,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="confirmPassword">Confirm password</Label>
-        <Input
+        <PasswordInput
           id="confirmPassword"
           name="confirmPassword"
-          type="password"
           autoComplete="new-password"
           minLength={MIN_PASSWORD_LENGTH}
           required

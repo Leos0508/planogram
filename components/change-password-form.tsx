@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
+import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/toast-provider";
 import { changePassword } from "@/lib/auth/password-actions";
@@ -50,9 +50,8 @@ export function ChangePasswordForm({
     <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="current-password">Current password</Label>
-        <Input
+        <PasswordInput
           id="current-password"
-          type="password"
           autoComplete="current-password"
           value={currentPassword}
           onChange={(event) => setCurrentPassword(event.target.value)}
@@ -62,9 +61,8 @@ export function ChangePasswordForm({
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="new-password">New password</Label>
-        <Input
+        <PasswordInput
           id="new-password"
-          type="password"
           autoComplete="new-password"
           minLength={MIN_PASSWORD_LENGTH}
           value={newPassword}
@@ -75,9 +73,8 @@ export function ChangePasswordForm({
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="confirm-password">Confirm new password</Label>
-        <Input
+        <PasswordInput
           id="confirm-password"
-          type="password"
           autoComplete="new-password"
           minLength={MIN_PASSWORD_LENGTH}
           value={confirmPassword}
