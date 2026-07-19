@@ -20,6 +20,8 @@
 
 Built on shadcn OKLCH tokens in `app/globals.css`. Do not hardcode hex/rgb in components.
 
+**Light / dark:** `:root` and `.dark` overrides live in `app/globals.css`. `next-themes` toggles the `dark` class on `<html>` (Light / Dark / System). Prefer semantic Tailwind classes so both modes stay correct.
+
 | Token | Use |
 |-------|-----|
 | `background` / `foreground` | App shell, viewport backdrop |
