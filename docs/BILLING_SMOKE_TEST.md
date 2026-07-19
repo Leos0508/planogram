@@ -55,7 +55,11 @@ If using a CLI-provisioned sandbox (`stripe sandbox create`), claim it before ex
 
 1. Delete an Unlimited workspace (sole OWNER) → Stripe subscription canceled when `stripeSubscriptionId` is present.
 
+## Live mode
+
+When ready for real payments, follow **[`docs/STRIPE_LIVE_GO_LIVE.md`](./STRIPE_LIVE_GO_LIVE.md)** (activate account, live keys, live webhook, Vercel Production env, verify Checkout → Unlimited → Portal).
+
 ## Out of scope
 
-- Live-mode go-live / Tax / invoices UI
+- Tax / invoices UI
 - Playwright automation of Stripe Checkout

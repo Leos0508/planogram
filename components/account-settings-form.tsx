@@ -20,6 +20,7 @@ import {
   type AccountDeletionStatus,
 } from "@/lib/account/actions";
 import { ChangePasswordForm } from "@/components/change-password-form";
+import { ThemePreferenceSelect } from "@/components/theme-controls";
 import { updateDisplayName } from "@/lib/settings/actions";
 import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/settings/validation";
 
@@ -118,6 +119,16 @@ export default function AccountSettingsForm({
           </Button>
         </div>
       </form>
+
+      <section className="max-w-md space-y-3">
+        <div className="space-y-1">
+          <h2 className="text-sm font-medium">Appearance</h2>
+          <p className="text-sm text-muted-foreground">
+            Choose light, dark, or match your device.
+          </p>
+        </div>
+        <ThemePreferenceSelect />
+      </section>
 
       <section className="max-w-md space-y-3">
         <div className="space-y-1">

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { MenuIcon, XIcon } from "lucide-react";
 import { signOutAction } from "@/lib/auth/actions";
+import { ThemeCycleButton } from "@/components/theme-controls";
 import { Button } from "@/components/ui/button";
 import WorkspaceSwitcher from "@/components/workspace-switcher";
 import type { WorkspaceMembershipListItem } from "@/lib/workspaces/list";
@@ -92,6 +93,7 @@ export default function NavMenu({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <ThemeCycleButton />
           {user ? (
             <div className="relative" ref={menuRef}>
               <Button
