@@ -5,6 +5,7 @@ import {
   projectDrop,
   projectItemDrag,
   CANVAS_LABEL_PADDING_PX,
+  hasExceededDragActivationDistance,
 } from "@/lib/planogram-engine";
 import type { DropProjection, DropReason, PlanogramState } from "@/lib/planogram-engine";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -149,10 +150,19 @@ export function usePlanogramDrag({
 
       event.preventDefault();
       event.stopPropagation();
-      document.body.style.cursor = "none";
 
-      let lastClientX = event.clientX;
-      let lastClientY = event.clientY;
+      const originX = event.clientX;
+      const originY = event.clientY;
+      let lastClientX = originX;
+      let lastClientY = originY;
+      // Item drags arm only after a small movement so click-to-select does not move.
+      let dragActive = mode !== "item";
+
+      const activateDragCursor = () => {
+        document.body.style.cursor = "none";
+      };
+
+      if (dragActive) activateDragCursor();
 
       const projectFromPointer = (
         clientX: number,
@@ -173,6 +183,22 @@ export function usePlanogramDrag({
       const onPointerMove = (moveEvent: PointerEvent) => {
         lastClientX = moveEvent.clientX;
         lastClientY = moveEvent.clientY;
+
+        if (!dragActive) {
+          if (
+            !hasExceededDragActivationDistance(
+              originX,
+              originY,
+              moveEvent.clientX,
+              moveEvent.clientY,
+            )
+          ) {
+            return;
+          }
+          dragActive = true;
+          activateDragCursor();
+        }
+
         projectFromPointer(
           moveEvent.clientX,
           moveEvent.clientY,
@@ -181,7 +207,7 @@ export function usePlanogramDrag({
       };
 
       const onAltChange = (keyEvent: KeyboardEvent) => {
-        if (keyEvent.key !== "Alt") return;
+        if (keyEvent.key !== "Alt" || !dragActive) return;
         projectFromPointer(lastClientX, lastClientY, keyEvent.type === "keydown");
       };
 
@@ -198,6 +224,12 @@ export function usePlanogramDrag({
 
       const onPointerUp = (upEvent: PointerEvent) => {
         endDragSession();
+
+        // Sub-threshold item release: select only (already handled by caller).
+        if (!dragActive) {
+          setDrag(null);
+          return;
+        }
 
         const next = projectAt(
           upEvent.clientX,
@@ -237,15 +269,17 @@ export function usePlanogramDrag({
       window.addEventListener("keydown", onAltChange);
       window.addEventListener("keyup", onAltChange);
 
-      const next = projectAt(
-        event.clientX,
-        event.clientY,
-        sku,
-        mode,
-        itemId,
-        event.altKey,
-      );
-      if (next) setDrag(next);
+      if (dragActive) {
+        const next = projectAt(
+          event.clientX,
+          event.clientY,
+          sku,
+          mode,
+          itemId,
+          event.altKey,
+        );
+        if (next) setDrag(next);
+      }
     },
     [projectAt],
   );
