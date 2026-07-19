@@ -129,7 +129,7 @@ test.describe("multi-workspace smoke", () => {
     await guestPage.goto("/register");
     await guestPage.getByLabel("Name").fill(`Guest ${stamp}`);
     await guestPage.getByLabel("Email").fill(guestEmail);
-    await guestPage.getByLabel("Password").fill(guestPassword);
+    await guestPage.getByLabel("Password", { exact: true }).fill(guestPassword);
     await guestPage.getByRole("button", { name: "Create account" }).click();
     await expect(guestPage).toHaveURL(/\/planograms$/);
 
