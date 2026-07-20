@@ -5,6 +5,10 @@ import {
 } from "@/lib/planogram-engine/constant";
 import { itemFacingsWide } from "@/lib/planogram-engine/facings";
 import type { PlanogramLayout, PlanogramState } from "@/lib/planogram-engine/types";
+import {
+  exportSvgFitScale,
+  type ExportSvgFit,
+} from "@/lib/planogram-export/export-visual";
 import { printHtmlDocument } from "@/lib/planogram-export/print-html";
 
 export type ExportSku = {
@@ -28,16 +32,22 @@ export function renderPlanogramSvg({
   state,
   skuById,
   planogramName,
+  fit,
 }: {
   layout: PlanogramLayout;
   state: PlanogramState;
   skuById: Map<string, ExportSku>;
   planogramName: string;
+  /** When set, shrink width/height (keep viewBox) so the SVG fits the page. */
+  fit?: ExportSvgFit;
 }): string {
   const originY = layout.bounds.y;
   const shelfWidthPx = mmToPx(layout.contentWidthMm);
   const heightPx = mmToPx(layout.bounds.height);
   const widthPx = shelfWidthPx + CANVAS_LABEL_PADDING_PX;
+  const scale = fit ? exportSvgFitScale(widthPx, heightPx, fit) : 1;
+  const displayWidthPx = widthPx * scale;
+  const displayHeightPx = heightPx * scale;
 
   const toCanvasPxY = (mm: number) => mmToPx(mm - originY);
   const toCanvasPxX = (mm: number) => mmToPx(mm);
@@ -109,9 +119,9 @@ export function renderPlanogramSvg({
     .join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${displayWidthPx}" height="${displayHeightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
   <title>${escapeXml(planogramName)}</title>
-  <desc>Planogram export at ${PX_PER_MM} px/mm</desc>
+  <desc>Planogram export at ${PX_PER_MM} px/mm${scale < 1 ? ` (fit scale ${scale.toFixed(3)})` : ""}</desc>
   <rect width="100%" height="100%" fill="#ffffff" />
   ${shelfMarkup}
   ${itemMarkup}
