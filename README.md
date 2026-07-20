@@ -59,5 +59,6 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 - Sentry: [`docs/SENTRY_SETUP.md`](docs/SENTRY_SETUP.md)
 - Seed SKUs: [`docs/SEED_SKU_SPECS.md`](docs/SEED_SKU_SPECS.md)
 - SKU batch import: [`docs/SKU_IMPORT.md`](docs/SKU_IMPORT.md) · [`docs/examples/sku-import-example.csv`](docs/examples/sku-import-example.csv)
+- Parametric can/bottle packaging: [`docs/SKU_PACKAGING.md`](docs/SKU_PACKAGING.md)
 - Blob: [`docs/BLOB_SMOKE_TEST.md`](docs/BLOB_SMOKE_TEST.md)
 - Workspace: [`docs/WORKSPACE_MIGRATION.md`](docs/WORKSPACE_MIGRATION.md) · [`docs/WORKSPACE_TENANCY_TEST.md`](docs/WORKSPACE_TENANCY_TEST.md)

@@ -35,4 +35,4 @@ Example CSV: [`docs/examples/sku-import-example.csv`](examples/sku-import-exampl
 - Excel `.xlsx`
 - Upsert by code
 - Uploading image files during import (URLs only)
-- Parametric packaging columns (Plan 02 S3)
+- Parametric packaging columns (can/bottle `shape` + dims — set in the SKU manager; see [`docs/SKU_PACKAGING.md`](SKU_PACKAGING.md))

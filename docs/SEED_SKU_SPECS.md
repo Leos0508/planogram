@@ -29,6 +29,7 @@ Dims are **industry-ish averages** for planogram facing (retail shelf face), rou
 ## Related
 
 - Batch CSV/JSON import (user catalogs): [`docs/SKU_IMPORT.md`](SKU_IMPORT.md) · example [`docs/examples/sku-import-example.csv`](examples/sku-import-example.csv)
+- Parametric can/bottle packaging + mesh preview: [`docs/SKU_PACKAGING.md`](SKU_PACKAGING.md) (Plan 02 S3 / [PLA-88](https://linear.app/planogram/issue/PLA-88/parametric-canbottle-sku-schema), [PLA-87](https://linear.app/planogram/issue/PLA-87/low-poly-packaging-mesh-from-parametric-specs))
 
 ## Out of scope
 
