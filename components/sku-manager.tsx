@@ -12,9 +12,12 @@ import {
 import {
   createSku,
   deleteSku,
+  importSkus,
   updateSku,
   uploadSkuImage,
 } from "@/lib/skus/actions";
+import type { SkuImportSummary } from "@/lib/skus/actions";
+import { detectSkuImportFormat } from "@/lib/skus/import-parse";
 import { filterSkusByQuery } from "@/lib/skus/filter";
 import type { Sku } from "@/lib/skus/queries";
 import {
@@ -23,7 +26,14 @@ import {
   randomSkuColor,
 } from "@/lib/validation/sku";
 import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
-import { PencilIcon, PlusIcon, SearchIcon, Trash2Icon, XIcon } from "lucide-react";
+import {
+  PencilIcon,
+  PlusIcon,
+  SearchIcon,
+  Trash2Icon,
+  UploadIcon,
+  XIcon,
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
@@ -332,8 +342,15 @@ export default function SkuManager({
   const urlQuery = searchParams.get("q") ?? "";
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"none" | "create" | "edit">("none");
+  const [importSummary, setImportSummary] = useState<SkuImportSummary | null>(
+    null,
+  );
+  const [mode, setMode] = useState<"none" | "create" | "edit" | "import">(
+    "none",
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importFileKey, setImportFileKey] = useState(0);
   const [searchInput, setSearchInput] = useState(urlQuery);
   const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 
@@ -361,6 +378,8 @@ export default function SkuManager({
   const closeForm = () => {
     setMode("none");
     setEditingId(null);
+    setImportFile(null);
+    setImportFileKey((key) => key + 1);
     setError(null);
   };
 
@@ -386,6 +405,7 @@ export default function SkuManager({
     }
 
     setError(null);
+    setImportSummary(null);
     startTransition(async () => {
       const image = await resolveImageUrl(parsed);
       if (!image.ok) {
@@ -420,6 +440,7 @@ export default function SkuManager({
     }
 
     setError(null);
+    setImportSummary(null);
     startTransition(async () => {
       const image = await resolveImageUrl(parsed);
       if (!image.ok) {
@@ -450,6 +471,7 @@ export default function SkuManager({
     if (!window.confirm(`Delete "${sku.name}"?`)) return;
 
     setError(null);
+    setImportSummary(null);
     startTransition(async () => {
       const result = await deleteSku({ id: sku.id });
       if (!result.ok) {
@@ -461,24 +483,68 @@ export default function SkuManager({
     });
   };
 
+  const handleImport = () => {
+    if (!canWrite || !importFile) return;
+
+    const format = detectSkuImportFormat(importFile.name, importFile.type);
+    if (!format) {
+      setError("Choose a .csv or .json file");
+      return;
+    }
+
+    setError(null);
+    setImportSummary(null);
+    startTransition(async () => {
+      const content = await importFile.text();
+      const result = await importSkus({ content, format });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setImportSummary(result.data);
+      setImportFile(null);
+      setImportFileKey((key) => key + 1);
+      if (result.data.created > 0) {
+        router.refresh();
+      }
+    });
+  };
+
   return (
     <CatalogPageLayout
       title="SKUs"
       action={
         canWrite ? (
-          <Button
-            type="button"
-            variant={mode === "create" ? "secondary" : "default"}
-            size="sm"
-            onClick={() => {
-              setMode("create");
-              setEditingId(null);
-              setError(null);
-            }}
-          >
-            <PlusIcon className="size-4" />
-            New
-          </Button>
+          <>
+            <Button
+              type="button"
+              variant={mode === "import" ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => {
+                setMode("import");
+                setEditingId(null);
+                setError(null);
+                setImportSummary(null);
+              }}
+            >
+              <UploadIcon className="size-4" />
+              Import
+            </Button>
+            <Button
+              type="button"
+              variant={mode === "create" ? "secondary" : "default"}
+              size="sm"
+              onClick={() => {
+                setMode("create");
+                setEditingId(null);
+                setError(null);
+                setImportSummary(null);
+              }}
+            >
+              <PlusIcon className="size-4" />
+              New
+            </Button>
+          </>
         ) : null
       }
       banner={
@@ -522,13 +588,79 @@ export default function SkuManager({
         </div>
       }
       alert={
-        error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
+        error || importSummary ? (
+          <div className="flex flex-col gap-2">
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+            {importSummary ? (
+              <div className="border bg-card p-3 text-sm" role="status">
+                <p>
+                  Import finished: {importSummary.created} created
+                  {importSummary.failed > 0
+                    ? `, ${importSummary.failed} failed`
+                    : ""}
+                  .
+                </p>
+                {importSummary.errors.length > 0 ? (
+                  <ul className="mt-2 max-h-40 list-disc overflow-y-auto pl-5 text-destructive">
+                    {importSummary.errors.map((item) => (
+                      <li key={`${item.row}-${item.message}`}>
+                        Row {item.row}: {item.message}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         ) : null
       }
     >
+      {canWrite && mode === "import" ? (
+        <div className="flex flex-col gap-3 border bg-card p-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sku-import-file">CSV or JSON file</Label>
+            <Input
+              key={importFileKey}
+              id="sku-import-file"
+              type="file"
+              accept=".csv,.json,text/csv,application/json"
+              disabled={pending}
+              onChange={(event) => {
+                setImportFile(event.target.files?.[0] ?? null);
+                setError(null);
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Required columns: name, sku, width, height (mm). Optional: color
+              (#rrggbb), imageUrl (http/https). Duplicate codes are rejected;
+              valid rows still import.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={pending || !importFile}
+              onClick={handleImport}
+            >
+              Import SKUs
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={closeForm}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {canWrite && mode === "create" ? (
         <SkuForm
           key="create"
@@ -563,7 +695,7 @@ export default function SkuManager({
       {skus.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           {canWrite
-            ? "No SKUs yet. Add products with width and height in millimeters."
+            ? "No SKUs yet. Import a CSV/JSON file or add products with width and height in millimeters."
             : "No SKUs in this workspace."}
         </p>
       ) : filteredSkus.length === 0 ? (
@@ -618,6 +750,7 @@ export default function SkuManager({
                             setMode("edit");
                             setEditingId(sku.id);
                             setError(null);
+                            setImportSummary(null);
                           }}
                         >
                           <PencilIcon className="size-4" />
