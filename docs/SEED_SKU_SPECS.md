@@ -1,6 +1,6 @@
 # Seed SKU specs (Plan 01)
 
-First-run catalog for new (or empty) workspaces. Values are **face-on width × height in mm** for the 2D editor — not parametric packaging models (Plan 02).
+First-run catalog for new (or empty) workspaces. Values are **face-on width × height in mm** for the 2D editor — not parametric packaging models (Plan 02 S3: [PLA-88](https://linear.app/planogram/issue/PLA-88/parametric-canbottle-sku-schema)).
 
 Defined in `lib/skus/seed-catalog.ts` and applied by `seedCatalogForWorkspace` (workspace bootstrap + empty `/skus` load).
 
@@ -23,11 +23,14 @@ Dims are **industry-ish averages** for planogram facing (retail shelf face), rou
 
 - Beverage can diameters ~53–67 mm; heights scale with fill volume (250–500 ml).
 - PET / glass heights are typical retail upright footprints, not ISO engineering drawings.
-- No brand artwork: solid editor colors only until users upload images.
+- No brand artwork: solid editor colors only until users upload images (persisted SKU color fills no-image SKUs — Plan 02 S2 / [PLA-82](https://linear.app/planogram/issue/PLA-82/persist-sku-color-for-no-image-differentiation)).
 - Idempotent: seeding runs only when the workspace has **zero** SKUs.
+
+## Related
+
+- Batch CSV/JSON import (user catalogs): [`docs/SKU_IMPORT.md`](SKU_IMPORT.md) · example [`docs/examples/sku-import-example.csv`](examples/sku-import-example.csv)
 
 ## Out of scope
 
-- Parametric can/bottle JSON schema (Plan 02)
-- Batch CSV import
+- Parametric can/bottle JSON schema (Plan 02 S3 — [PLA-88](https://linear.app/planogram/issue/PLA-88/parametric-canbottle-sku-schema))
 - Photoreal product images
