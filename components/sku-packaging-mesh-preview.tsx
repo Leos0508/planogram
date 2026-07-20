@@ -26,12 +26,14 @@ type PreviewTarget = {
   packaging: SkuPackaging;
 };
 
-function PackagingMeshCanvas({
+export function PackagingMeshCanvas({
   packaging,
   color,
+  className = "h-[280px] w-full border border-border bg-muted/20",
 }: {
   packaging: SkuPackaging;
   color: string;
+  className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -128,7 +130,7 @@ function PackagingMeshCanvas({
   return (
     <div
       ref={containerRef}
-      className="h-[280px] w-full border border-border bg-muted/20"
+      className={className}
       aria-label="Packaging mesh preview"
     />
   );
