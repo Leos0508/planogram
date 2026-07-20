@@ -9,6 +9,10 @@ import {
   parseSkuImport,
 } from "@/lib/skus/import-parse";
 import {
+  type SkuShape,
+  resolveSkuDimensions,
+} from "@/lib/skus/packaging";
+import {
   isValidSkuFootprint,
   normalizeSkuColor,
   resolveCreateSkuColor,
@@ -17,6 +21,7 @@ import {
   findSkuInWorkspace,
   requireWorkspaceWrite,
 } from "@/lib/workspaces/current";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 
 export type SkuRecord = {
@@ -27,6 +32,8 @@ export type SkuRecord = {
   height: number;
   color: string;
   imageUrl: string | null;
+  shape: SkuShape | null;
+  packaging: unknown;
 };
 
 function normalizeImageUrl(imageUrl?: string | null): string | null {
@@ -51,6 +58,8 @@ function validateSkuInput(input: {
   height: number;
   color?: string | null;
   imageUrl?: string | null;
+  shape?: SkuShape | null;
+  packaging?: unknown;
   /** When true, empty/missing color is an error (update). Create allows omit → random. */
   requireColor?: boolean;
 }): string | null {
@@ -59,7 +68,18 @@ function validateSkuInput(input: {
 
   if (!name) return "Name is required";
   if (!code) return "SKU code is required";
-  if (!isValidSkuFootprint(input.width, input.height)) {
+
+  const dims = resolveSkuDimensions({
+    width: input.width,
+    height: input.height,
+    shape: input.shape,
+    packaging: input.packaging,
+  });
+  if (!dims.ok) return dims.message;
+
+  // Flat path still needs finite positive footprint (resolve already checks;
+  // keep explicit guard when packaging is absent for clearer messages).
+  if (dims.shape == null && !isValidSkuFootprint(dims.width, dims.height)) {
     return "Width and height must be positive numbers (mm)";
   }
 
@@ -210,9 +230,19 @@ export async function createSku(input: {
   height: number;
   color?: string | null;
   imageUrl?: string | null;
+  shape?: SkuShape | null;
+  packaging?: unknown;
 }): Promise<ActionResult<SkuRecord>> {
   const error = validateSkuInput(input);
   if (error) return { ok: false, message: error };
+
+  const dims = resolveSkuDimensions({
+    width: input.width,
+    height: input.height,
+    shape: input.shape,
+    packaging: input.packaging,
+  });
+  if (!dims.ok) return { ok: false, message: dims.message };
 
   try {
     const access = await requireWorkspaceWrite();
@@ -225,16 +255,34 @@ export async function createSku(input: {
         workspaceId: access.workspace.id,
         name: input.name.trim(),
         sku: input.sku.trim(),
-        width: Math.round(input.width),
-        height: Math.round(input.height),
+        width: dims.width,
+        height: dims.height,
         color,
         imageUrl: normalizeImageUrl(input.imageUrl),
+        shape: dims.shape,
+        packaging:
+          dims.packaging === null
+            ? Prisma.DbNull
+            : (dims.packaging as Prisma.InputJsonValue),
       },
     });
 
     revalidatePath("/skus");
     revalidatePath("/planograms");
-    return { ok: true, data: created };
+    return {
+      ok: true,
+      data: {
+        id: created.id,
+        name: created.name,
+        sku: created.sku,
+        width: created.width,
+        height: created.height,
+        color: created.color,
+        imageUrl: created.imageUrl,
+        shape: created.shape,
+        packaging: created.packaging,
+      },
+    };
   } catch (error) {
     console.error("[createSku]", error);
     return {
@@ -252,9 +300,19 @@ export async function updateSku(input: {
   height: number;
   color: string;
   imageUrl?: string | null;
+  shape?: SkuShape | null;
+  packaging?: unknown;
 }): Promise<ActionResult<SkuRecord>> {
   const error = validateSkuInput({ ...input, requireColor: true });
   if (error) return { ok: false, message: error };
+
+  const dims = resolveSkuDimensions({
+    width: input.width,
+    height: input.height,
+    shape: input.shape,
+    packaging: input.packaging,
+  });
+  if (!dims.ok) return { ok: false, message: dims.message };
 
   try {
     const access = await requireWorkspaceWrite();
@@ -273,10 +331,15 @@ export async function updateSku(input: {
       data: {
         name: input.name.trim(),
         sku: input.sku.trim(),
-        width: Math.round(input.width),
-        height: Math.round(input.height),
+        width: dims.width,
+        height: dims.height,
         color,
         imageUrl: nextImageUrl,
+        shape: dims.shape,
+        packaging:
+          dims.packaging === null
+            ? Prisma.DbNull
+            : (dims.packaging as Prisma.InputJsonValue),
       },
     });
 
@@ -286,7 +349,20 @@ export async function updateSku(input: {
 
     revalidatePath("/skus");
     revalidatePath("/planograms");
-    return { ok: true, data: updated };
+    return {
+      ok: true,
+      data: {
+        id: updated.id,
+        name: updated.name,
+        sku: updated.sku,
+        width: updated.width,
+        height: updated.height,
+        color: updated.color,
+        imageUrl: updated.imageUrl,
+        shape: updated.shape,
+        packaging: updated.packaging,
+      },
+    };
   } catch (error) {
     console.error("[updateSku]", error);
     return {

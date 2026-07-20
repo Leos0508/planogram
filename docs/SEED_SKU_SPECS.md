@@ -1,6 +1,6 @@
 # Seed SKU specs (Plan 01)
 
-First-run catalog for new (or empty) workspaces. Values are **face-on width × height in mm** for the 2D editor — not parametric packaging models (Plan 02 S3: [PLA-88](https://linear.app/planogram/issue/PLA-88/parametric-canbottle-sku-schema)).
+First-run catalog for new (or empty) workspaces. Values are **face-on width × height in mm** for the 2D editor. Parametric can/bottle packaging (`shape` + `packaging` JSON on `SKU`) is supported in the SKU manager ([PLA-88](https://linear.app/planogram/issue/PLA-88/parametric-canbottle-sku-schema)); this seed catalog stays face-on only.
 
 Defined in `lib/skus/seed-catalog.ts` and applied by `seedCatalogForWorkspace` (workspace bootstrap + empty `/skus` load).
 
@@ -32,5 +32,5 @@ Dims are **industry-ish averages** for planogram facing (retail shelf face), rou
 
 ## Out of scope
 
-- Parametric can/bottle JSON schema (Plan 02 S3 — [PLA-88](https://linear.app/planogram/issue/PLA-88/parametric-canbottle-sku-schema))
+- Seed backfill of parametric can/bottle payloads (optional follow-up)
 - Photoreal product images

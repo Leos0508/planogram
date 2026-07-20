@@ -19,6 +19,13 @@ import {
 import type { SkuImportSummary } from "@/lib/skus/actions";
 import { detectSkuImportFormat } from "@/lib/skus/import-parse";
 import { filterSkusByQuery } from "@/lib/skus/filter";
+import {
+  type SkuShape,
+  deriveFaceOnMm,
+  isSkuShape,
+  parseSkuPackaging,
+  readStoredPackaging,
+} from "@/lib/skus/packaging";
 import type { Sku } from "@/lib/skus/queries";
 import {
   isValidSkuFootprint,
@@ -39,6 +46,8 @@ import { useEffect, useState, useTransition } from "react";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
+type ShapeMode = "NONE" | SkuShape;
+
 type SkuFormState = {
   name: string;
   sku: string;
@@ -48,6 +57,13 @@ type SkuFormState = {
   imageUrl: string;
   imageFile: File | null;
   clearImage: boolean;
+  shape: ShapeMode;
+  bodyDiameterMm: string;
+  heightMm: string;
+  endDiameterMm: string;
+  baseDiameterMm: string;
+  neckDiameterMm: string;
+  capacityMl: string;
 };
 
 const emptyForm = (): SkuFormState => ({
@@ -59,7 +75,69 @@ const emptyForm = (): SkuFormState => ({
   imageUrl: "",
   imageFile: null,
   clearImage: false,
+  shape: "NONE",
+  bodyDiameterMm: "",
+  heightMm: "",
+  endDiameterMm: "",
+  baseDiameterMm: "",
+  neckDiameterMm: "",
+  capacityMl: "",
 });
+
+function formFromSku(sku: Sku): SkuFormState {
+  const packaging = readStoredPackaging(sku.shape, sku.packaging);
+  return {
+    name: sku.name,
+    sku: sku.sku,
+    width: String(sku.width),
+    height: String(sku.height),
+    color: sku.color,
+    imageUrl: sku.imageUrl ?? "",
+    imageFile: null,
+    clearImage: false,
+    shape: packaging?.shape ?? "NONE",
+    bodyDiameterMm:
+      packaging != null ? String(packaging.bodyDiameterMm) : "",
+    heightMm: packaging != null ? String(packaging.heightMm) : "",
+    endDiameterMm:
+      packaging?.shape === "CAN" ? String(packaging.endDiameterMm) : "",
+    baseDiameterMm:
+      packaging != null ? String(packaging.baseDiameterMm) : "",
+    neckDiameterMm:
+      packaging?.shape === "BOTTLE" ? String(packaging.neckDiameterMm) : "",
+    capacityMl:
+      packaging?.capacityMl != null ? String(packaging.capacityMl) : "",
+  };
+}
+
+function packagingInputFromForm(values: SkuFormState) {
+  const base = {
+    bodyDiameterMm: values.bodyDiameterMm,
+    heightMm: values.heightMm,
+    baseDiameterMm: values.baseDiameterMm,
+    capacityMl: values.capacityMl.trim() ? values.capacityMl : undefined,
+  };
+  if (values.shape === "CAN") {
+    return { ...base, endDiameterMm: values.endDiameterMm };
+  }
+  if (values.shape === "BOTTLE") {
+    return { ...base, neckDiameterMm: values.neckDiameterMm };
+  }
+  return null;
+}
+
+function derivedFacePreview(values: SkuFormState): {
+  width: string;
+  height: string;
+} | null {
+  if (values.shape === "NONE") return null;
+  const packaging = packagingInputFromForm(values);
+  if (!packaging) return null;
+  const parsed = parseSkuPackaging(values.shape, packaging);
+  if (!parsed.ok) return null;
+  const face = deriveFaceOnMm(parsed.data);
+  return { width: String(face.width), height: String(face.height) };
+}
 
 function replaceSearchParam(
   router: ReturnType<typeof useRouter>,
@@ -111,6 +189,9 @@ function SkuForm({
     localPreview ??
     (!values.clearImage && values.imageUrl ? values.imageUrl : null);
 
+  const facePreview = derivedFacePreview(values);
+  const isParametric = values.shape !== "NONE";
+
   return (
     <form
       onSubmit={(event) => {
@@ -142,34 +223,216 @@ function SkuForm({
             required
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="sku-width">Width (mm)</Label>
-          <Input
-            id="sku-width"
-            type="number"
-            min={1}
-            value={values.width}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, width: event.target.value }))
-            }
-            className="font-mono"
-            required
-          />
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="sku-shape">Packaging shape</Label>
+          <select
+            id="sku-shape"
+            className="h-9 border border-border bg-background px-2 text-sm"
+            value={values.shape}
+            disabled={pending}
+            onChange={(event) => {
+              const next = event.target.value as ShapeMode;
+              setValues((prev) => ({
+                ...prev,
+                shape: next,
+                ...(next === "NONE"
+                  ? {
+                      bodyDiameterMm: "",
+                      heightMm: "",
+                      endDiameterMm: "",
+                      baseDiameterMm: "",
+                      neckDiameterMm: "",
+                      capacityMl: "",
+                    }
+                  : {}),
+              }));
+            }}
+          >
+            <option value="NONE">Flat (width × height)</option>
+            <option value="CAN">Can</option>
+            <option value="BOTTLE">Bottle</option>
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Can/bottle store parametric dims; face-on footprint is derived for
+            the 2D editor.
+          </p>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="sku-height">Height (mm)</Label>
-          <Input
-            id="sku-height"
-            type="number"
-            min={1}
-            value={values.height}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, height: event.target.value }))
-            }
-            className="font-mono"
-            required
-          />
-        </div>
+
+        {isParametric ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sku-body-diameter">Body diameter (mm)</Label>
+              <Input
+                id="sku-body-diameter"
+                type="number"
+                min={1}
+                step="any"
+                value={values.bodyDiameterMm}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    bodyDiameterMm: event.target.value,
+                  }))
+                }
+                className="font-mono"
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sku-pack-height">Height (mm)</Label>
+              <Input
+                id="sku-pack-height"
+                type="number"
+                min={1}
+                step="any"
+                value={values.heightMm}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    heightMm: event.target.value,
+                  }))
+                }
+                className="font-mono"
+                required
+              />
+            </div>
+            {values.shape === "CAN" ? (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="sku-end-diameter">End/lid diameter (mm)</Label>
+                <Input
+                  id="sku-end-diameter"
+                  type="number"
+                  min={1}
+                  step="any"
+                  value={values.endDiameterMm}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      endDiameterMm: event.target.value,
+                    }))
+                  }
+                  className="font-mono"
+                  required
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="sku-neck-diameter">Neck diameter (mm)</Label>
+                <Input
+                  id="sku-neck-diameter"
+                  type="number"
+                  min={1}
+                  step="any"
+                  value={values.neckDiameterMm}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      neckDiameterMm: event.target.value,
+                    }))
+                  }
+                  className="font-mono"
+                  required
+                />
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sku-base-diameter">Base diameter (mm)</Label>
+              <Input
+                id="sku-base-diameter"
+                type="number"
+                min={1}
+                step="any"
+                value={values.baseDiameterMm}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    baseDiameterMm: event.target.value,
+                  }))
+                }
+                className="font-mono"
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label htmlFor="sku-capacity">Capacity (ml, optional)</Label>
+              <Input
+                id="sku-capacity"
+                type="number"
+                min={1}
+                step="any"
+                value={values.capacityMl}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    capacityMl: event.target.value,
+                  }))
+                }
+                className="font-mono"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sku-width">Face-on width (mm)</Label>
+              <Input
+                id="sku-width"
+                type="number"
+                value={facePreview?.width ?? ""}
+                className="font-mono"
+                readOnly
+                disabled
+                aria-describedby="sku-face-hint"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sku-height">Face-on height (mm)</Label>
+              <Input
+                id="sku-height"
+                type="number"
+                value={facePreview?.height ?? ""}
+                className="font-mono"
+                readOnly
+                disabled
+                aria-describedby="sku-face-hint"
+              />
+            </div>
+            <p
+              id="sku-face-hint"
+              className="text-xs text-muted-foreground sm:col-span-2"
+            >
+              Derived from body diameter × height (rounded to whole mm).
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sku-width">Width (mm)</Label>
+              <Input
+                id="sku-width"
+                type="number"
+                min={1}
+                value={values.width}
+                onChange={(event) =>
+                  setValues((prev) => ({ ...prev, width: event.target.value }))
+                }
+                className="font-mono"
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sku-height">Height (mm)</Label>
+              <Input
+                id="sku-height"
+                type="number"
+                min={1}
+                value={values.height}
+                onChange={(event) =>
+                  setValues((prev) => ({ ...prev, height: event.target.value }))
+                }
+                className="font-mono"
+                required
+              />
+            </div>
+          </>
+        )}
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="sku-color">Display color</Label>
           <div className="flex items-center gap-3">
@@ -303,28 +566,59 @@ function SkuForm({
 }
 
 function parseForm(values: SkuFormState) {
-  const width = Number.parseInt(values.width, 10);
-  const height = Number.parseInt(values.height, 10);
-  if (!isValidSkuFootprint(width, height)) {
-    return { ok: false as const, message: "Width and height must be positive mm" };
-  }
   const color = normalizeSkuColor(values.color);
   if (!color) {
     return { ok: false as const, message: "Color must be a valid hex value (#rrggbb)" };
   }
+
+  const imageFields = {
+    imageUrl: values.clearImage ? null : values.imageUrl.trim() || null,
+    imageFile: values.imageFile,
+    clearImage: values.clearImage,
+  };
+
+  if (values.shape === "NONE") {
+    const width = Number.parseInt(values.width, 10);
+    const height = Number.parseInt(values.height, 10);
+    if (!isValidSkuFootprint(width, height)) {
+      return { ok: false as const, message: "Width and height must be positive mm" };
+    }
+    return {
+      ok: true as const,
+      data: {
+        name: values.name.trim(),
+        sku: values.sku.trim(),
+        width,
+        height,
+        color,
+        shape: null as SkuShape | null,
+        packaging: null as unknown,
+        ...imageFields,
+      },
+    };
+  }
+
+  if (!isSkuShape(values.shape)) {
+    return { ok: false as const, message: "Shape must be CAN or BOTTLE" };
+  }
+
+  const packaging = packagingInputFromForm(values);
+  const parsed = parseSkuPackaging(values.shape, packaging);
+  if (!parsed.ok) {
+    return { ok: false as const, message: parsed.message };
+  }
+
   return {
     ok: true as const,
     data: {
       name: values.name.trim(),
       sku: values.sku.trim(),
-      width,
-      height,
+      width: parsed.face.width,
+      height: parsed.face.height,
       color,
-      imageUrl: values.clearImage
-        ? null
-        : values.imageUrl.trim() || null,
-      imageFile: values.imageFile,
-      clearImage: values.clearImage,
+      shape: parsed.data.shape,
+      packaging: packagingInputFromForm(values),
+      ...imageFields,
     },
   };
 }
@@ -420,6 +714,8 @@ export default function SkuManager({
         height: parsed.data.height,
         color: parsed.data.color,
         imageUrl: image.imageUrl,
+        shape: parsed.data.shape,
+        packaging: parsed.data.packaging,
       });
       if (!result.ok) {
         setError(result.message);
@@ -456,6 +752,8 @@ export default function SkuManager({
         height: parsed.data.height,
         color: parsed.data.color,
         imageUrl: image.imageUrl,
+        shape: parsed.data.shape,
+        packaging: parsed.data.packaging,
       });
       if (!result.ok) {
         setError(result.message);
@@ -675,16 +973,7 @@ export default function SkuManager({
       {canWrite && mode === "edit" && editingSku ? (
         <SkuForm
           key={editingSku.id}
-          initial={{
-            name: editingSku.name,
-            sku: editingSku.sku,
-            width: String(editingSku.width),
-            height: String(editingSku.height),
-            color: editingSku.color,
-            imageUrl: editingSku.imageUrl ?? "",
-            imageFile: null,
-            clearImage: false,
-          }}
+          initial={formFromSku(editingSku)}
           submitLabel="Save changes"
           onSubmit={handleUpdate}
           onCancel={closeForm}
@@ -711,6 +1000,7 @@ export default function SkuManager({
               <tr>
                 <th className="px-4 py-2 font-semibold">Name</th>
                 <th className="px-4 py-2 font-semibold">Code</th>
+                <th className="px-4 py-2 font-semibold">Shape</th>
                 <th className="px-4 py-2 font-semibold">Color</th>
                 <th className="px-4 py-2 font-semibold">Footprint (mm)</th>
                 {canWrite ? (
@@ -723,6 +1013,13 @@ export default function SkuManager({
                 <tr key={sku.id} className="border-b last:border-b-0">
                   <td className="px-4 py-3">{sku.name}</td>
                   <td className="px-4 py-3 font-mono text-xs">{sku.sku}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {sku.shape === "CAN"
+                      ? "Can"
+                      : sku.shape === "BOTTLE"
+                        ? "Bottle"
+                        : "Flat"}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-2">
                       <span

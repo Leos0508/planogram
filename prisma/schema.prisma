@@ -27,6 +27,12 @@ enum WorkspaceAccess {
   READ
 }
 
+/// Parametric packaging discriminator for can/bottle SKUs (Plan 02 S3).
+enum SkuShape {
+  CAN
+  BOTTLE
+}
+
 model Workspace {
   id        String        @id @default(cuid())
   name      String
@@ -80,17 +86,23 @@ model WorkspaceInvitation {
 }
 
 model SKU {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   workspaceId String
   name        String
   sku         String
+  /// Face-on width (mm) for the 2D engine; derived from packaging when set.
   width       Int
+  /// Face-on height (mm) for the 2D engine; derived from packaging when set.
   height      Int
   /// Persisted display color (#rrggbb) used when imageUrl is missing.
   color       String
   imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  /// Null = flat face-on SKU (width/height only). CAN | BOTTLE when parametric.
+  shape       SkuShape?
+  /// Shape-specific dims (mm / ml). Null when shape is null. Validated in app.
+  packaging   Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   planogramItems PlanogramItem[]
