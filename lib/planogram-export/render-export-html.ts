@@ -1,5 +1,13 @@
 import type { PlanogramLayout, PlanogramState } from "@/lib/planogram-engine/types";
 import { itemFacingsWide } from "@/lib/planogram-engine/facings";
+import {
+  chunkShelfLayouts,
+  EXPORT_SECTION_AFTER,
+  overviewExportFit,
+  sectionExportFit,
+  shelfSectionLabel,
+  slicePlanogramLayout,
+} from "@/lib/planogram-export/export-visual";
 import { planogramPdfExportFilename } from "@/lib/planogram-export/filename";
 import { printHtmlDocument } from "@/lib/planogram-export/print-html";
 import {
@@ -45,6 +53,35 @@ function facingSummary(state: PlanogramState, skuId: string): number {
   return total;
 }
 
+function stripXmlDeclaration(svg: string): string {
+  return svg.replace(/^<\?xml[^>]*>\s*/u, "");
+}
+
+function renderVisualBlock({
+  layout,
+  state,
+  skuById,
+  planogramName,
+  fit,
+  className,
+}: {
+  layout: PlanogramLayout;
+  state: PlanogramState;
+  skuById: Map<string, ExportSkuDetail>;
+  planogramName: string;
+  fit: ReturnType<typeof overviewExportFit>;
+  className: string;
+}): string {
+  const svg = renderPlanogramSvg({
+    layout,
+    state,
+    skuById,
+    planogramName,
+    fit,
+  });
+  return `<div class="${className}">${stripXmlDeclaration(svg)}</div>`;
+}
+
 /** Build a print-friendly HTML report (visual + shelf specs + SKU list). */
 export function renderPlanogramExportHtml({
   layout,
@@ -57,12 +94,39 @@ export function renderPlanogramExportHtml({
   skuById: Map<string, ExportSkuDetail>;
   planogramName: string;
 }): string {
-  const svg = renderPlanogramSvg({
-    layout,
-    state,
-    skuById,
-    planogramName,
-  });
+  const shelfCount = layout.shelves.length;
+  const overviewFit = overviewExportFit(shelfCount);
+
+  const visualSections: string[] = [
+    `<h2>Visual</h2>`,
+    renderVisualBlock({
+      layout,
+      state,
+      skuById,
+      planogramName,
+      fit: overviewFit,
+      className: "visual visual--overview",
+    }),
+  ];
+
+  if (shelfCount > EXPORT_SECTION_AFTER) {
+    for (const chunk of chunkShelfLayouts(layout.shelves)) {
+      const shelfIds = new Set(chunk.map((shelf) => shelf.shelfId));
+      const sectionLayout = slicePlanogramLayout(layout, shelfIds);
+      const label = shelfSectionLabel(chunk);
+      visualSections.push(
+        `<h2>${escapeHtml(label)}</h2>`,
+        renderVisualBlock({
+          layout: sectionLayout,
+          state,
+          skuById,
+          planogramName: `${planogramName} — ${label}`,
+          fit: sectionExportFit(),
+          className: "visual visual--section",
+        }),
+      );
+    }
+  }
 
   const shelfRows = layout.shelves
     .map((shelf) => {
@@ -131,7 +195,7 @@ export function renderPlanogramExportHtml({
       page-break-inside: avoid;
       border: 1px solid #e4e4e7;
       padding: 8px;
-      overflow: auto;
+      overflow: hidden;
     }
     .visual svg { display: block; max-width: 100%; height: auto; }
     table {
@@ -181,8 +245,7 @@ export function renderPlanogramExportHtml({
     Stack gap ${state.config.stackGap} mm
   </p>
 
-  <h2>Visual</h2>
-  <div class="visual">${svg.replace(/^<\?xml[^>]*>\s*/u, "")}</div>
+  ${visualSections.join("\n  ")}
 
   <h2>Shelf specs (mm)</h2>
   <table>
