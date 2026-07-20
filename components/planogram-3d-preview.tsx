@@ -330,10 +330,11 @@ function addSceneItem(
 ) {
   let geometry: THREE.BufferGeometry;
   let offsetY = 0;
-  const isPackaging = item.mesh.kind === "packaging";
+  const itemMesh = item.mesh;
+  const isPackaging = itemMesh.kind === "packaging";
 
-  if (isPackaging) {
-    const meshData = buildPackagingMesh(item.mesh.packaging, {
+  if (itemMesh.kind === "packaging") {
+    const meshData = buildPackagingMesh(itemMesh.packaging, {
       radialSegments: RADIAL_SEGMENTS,
     });
     geometry = new THREE.BufferGeometry();
@@ -345,11 +346,11 @@ function addSceneItem(
     geometry.computeVertexNormals();
   } else {
     geometry = new THREE.BoxGeometry(
-      item.mesh.width,
-      item.mesh.height,
-      item.mesh.depth,
+      itemMesh.width,
+      itemMesh.height,
+      itemMesh.depth,
     );
-    offsetY = item.mesh.height / 2;
+    offsetY = itemMesh.height / 2;
   }
 
   const material = new THREE.MeshStandardMaterial({
