@@ -4,6 +4,11 @@ import { delIfOwnedSkuBlob, putSkuImage, validateSkuImageFile } from "@/lib/blob
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
 import {
+  type SkuImportFormat,
+  type SkuImportRowError,
+  parseSkuImport,
+} from "@/lib/skus/import-parse";
+import {
   isValidSkuFootprint,
   normalizeSkuColor,
   resolveCreateSkuColor,
@@ -107,6 +112,94 @@ export async function uploadSkuImage(
         ? error.message
         : "Failed to upload image";
     return { ok: false, message };
+  }
+}
+
+export type SkuImportSummary = {
+  created: number;
+  failed: number;
+  errors: SkuImportRowError[];
+};
+
+export async function importSkus(input: {
+  content: string;
+  format: SkuImportFormat;
+}): Promise<ActionResult<SkuImportSummary>> {
+  if (input.format !== "csv" && input.format !== "json") {
+    return { ok: false, message: "Format must be csv or json" };
+  }
+
+  try {
+    const access = await requireWorkspaceWrite();
+    if (!access.ok) return { ok: false, message: access.message };
+
+    const parsed = parseSkuImport(input.content, input.format);
+    const errors: SkuImportRowError[] = [...parsed.errors];
+
+    if (parsed.valid.length === 0) {
+      return {
+        ok: true,
+        data: {
+          created: 0,
+          failed: errors.length,
+          errors,
+        },
+      };
+    }
+
+    const existing = await prisma.sKU.findMany({
+      where: {
+        workspaceId: access.workspace.id,
+        OR: parsed.valid.map((row) => ({
+          sku: { equals: row.sku, mode: "insensitive" as const },
+        })),
+      },
+      select: { sku: true },
+    });
+    const existingCodes = new Set(
+      existing.map((row) => row.sku.toLowerCase()),
+    );
+
+    const toCreate = [];
+    for (const row of parsed.valid) {
+      if (existingCodes.has(row.sku.toLowerCase())) {
+        errors.push({
+          row: row.sourceRow,
+          message: `SKU code "${row.sku}" already exists in this workspace`,
+        });
+        continue;
+      }
+      toCreate.push({
+        workspaceId: access.workspace.id,
+        name: row.name,
+        sku: row.sku,
+        width: Math.round(row.width),
+        height: Math.round(row.height),
+        color: resolveCreateSkuColor(row.color),
+        imageUrl: row.imageUrl ?? null,
+      });
+    }
+
+    if (toCreate.length > 0) {
+      await prisma.sKU.createMany({ data: toCreate });
+    }
+
+    errors.sort((a, b) => a.row - b.row || a.message.localeCompare(b.message));
+
+    revalidatePath("/skus");
+    revalidatePath("/planograms");
+
+    return {
+      ok: true,
+      data: {
+        created: toCreate.length,
+        failed: errors.length,
+        errors,
+      },
+    };
+  } catch (error) {
+    console.error("[importSkus]", error);
+    return { ok: false, message: "Failed to import SKUs" };
   }
 }
 

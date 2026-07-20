@@ -1,0 +1,6 @@
+name,sku,width,height,color,imageUrl
+Slim can 250 ml,CAN-250-SLIM,53,134,#3b82f6,
+Standard can 330 ml,CAN-330,66,115,#ef4444,https://example.com/can-330.png
+PET bottle 500 ml,PET-500,65,210,#22c55e,
+Glass bottle 330 ml,GLASS-330,60,230,#8b5cf6,
+Cola multipack,COLA-MP-6,132,230,#f97316,
