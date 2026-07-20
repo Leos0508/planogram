@@ -7,6 +7,7 @@ Plan 02 S3–S4: optional **can** and **bottle** packaging specs on `SKU`, low-p
 | Schema + face derivation | [PLA-88](https://linear.app/planogram/issue/PLA-88/parametric-canbottle-sku-schema) | `lib/skus/packaging.ts`, Prisma `SkuShape` + `packaging` JSON |
 | Low-poly mesh + dialog preview | [PLA-87](https://linear.app/planogram/issue/PLA-87/low-poly-packaging-mesh-from-parametric-specs) | `lib/skus/packaging-mesh.ts`, `components/sku-packaging-mesh-preview.tsx` |
 | Packaging editor (2D + 3D) | [PLA-91](https://linear.app/planogram/issue/PLA-91/sku-packaging-editor-with-2d3d-preview) | `/skus/[id]`, `components/sku-packaging-editor.tsx`, `components/sku-packaging-face-preview.tsx` |
+| Planogram 3D scaffold | [PLA-9](https://linear.app/planogram/issue/PLA-9/3d-preview-scaffold) | `lib/planogram-3d/scene-from-layout.ts`, `components/planogram-3d-preview.tsx` |
 
 ## Model
 
@@ -40,7 +41,14 @@ When packaging is set, face-on width×height are **derived** from body diameter 
 
 `buildPackagingMesh` returns low-poly vertices/indices in **mm** (Y up, origin at base center). Default ~12 radial segments (preview uses 16). Used by the Three.js canvas (`PackagingMeshCanvas`) in the SKU list dialog and the packaging editor.
 
-Planogram shelf 3D is separate — see [PLA-9](https://linear.app/planogram/issue/PLA-9/3d-preview-scaffold) (S4).
+## Planogram 3D preview
+
+Read-only shelf scene from `PlanogramLayout` ([PLA-9](https://linear.app/planogram/issue/PLA-9/3d-preview-scaffold)):
+
+- Toggle via the **cube** button in the planogram editor toolbar (2D ↔ 3D)
+- Parametric can/bottle SKUs use `buildPackagingMesh`; flat SKUs fall back to a simple box extrusion
+- Does not change the placement engine API — `buildPlanogram3DScene` is a thin read adapter
+- Orbit with drag; scroll to zoom; Fit reframes the camera
 
 ## Packaging editor
 

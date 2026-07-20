@@ -2,9 +2,12 @@
 
 import DragItemPreview from "@/components/drag-item-preview";
 import EditorBottomMenu from "@/components/editor-bottom-menu";
+import Planogram3DPreview from "@/components/planogram-3d-preview";
 import PlanogramCanvas from "@/components/planogram-canvas";
 import PlanogramItemInspector from "@/components/planogram-item-inspector";
-import PlanogramViewport from "@/components/planogram-viewport";
+import PlanogramViewport, {
+  type PlanogramViewMode,
+} from "@/components/planogram-viewport";
 import { useToast } from "@/components/toast-provider";
 import { useCanvasViewport } from "@/hooks/use-canvas-viewport";
 import {
@@ -90,6 +93,8 @@ export default function PlanogramEditor({
   const [state, setState] = useState(() => planogramDetailToState(planogram));
   const stateRef = useRef(state);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<PlanogramViewMode>("2d");
+  const [fit3dToken, setFit3dToken] = useState(0);
   const history = usePlanogramHistory();
   const historyRef = useRef(history);
   const applyingHistoryRef = useRef(false);
@@ -481,7 +486,15 @@ export default function PlanogramEditor({
     transform,
     clientToCanvasLocal,
     fitToView,
-  } = useCanvasViewport(canvasRef);
+  } = useCanvasViewport(canvasRef, { enabled: viewMode === "2d" });
+
+  const handleFitToView = useCallback(() => {
+    if (viewMode === "3d") {
+      setFit3dToken((token) => token + 1);
+      return;
+    }
+    fitToView();
+  }, [fitToView, viewMode]);
 
   const onDropRejected = useCallback(
     (reason: DropReason) => {
@@ -571,6 +584,16 @@ export default function PlanogramEditor({
     onCommit,
     onDropRejected,
   });
+
+  const handleViewModeChange = useCallback(
+    (mode: PlanogramViewMode) => {
+      if (mode === "3d") {
+        cancelDrag();
+      }
+      setViewMode(mode);
+    },
+    [cancelDrag],
+  );
 
   const { resize: shelfResize, startResize: startShelfResize } = useShelfResize({
     clientToCanvasLocal,
@@ -815,9 +838,10 @@ export default function PlanogramEditor({
   const showCursorPreview = drag && !drag.projection.previewRect;
 
   useEffect(() => {
+    if (viewMode !== "2d") return;
     const frame = requestAnimationFrame(() => fitToView());
     return () => cancelAnimationFrame(frame);
-  }, [fitToView, panelLayoutKey]);
+  }, [fitToView, panelLayoutKey, viewMode]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -952,7 +976,9 @@ export default function PlanogramEditor({
         <PlanogramViewport
           viewportRef={viewportRef}
           transform={transform}
-          onFitToView={fitToView}
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
+          onFitToView={handleFitToView}
           canUndo={canWrite && history.canUndo}
           canRedo={canWrite && history.canRedo}
           onUndo={canWrite ? () => void handleUndo() : undefined}
@@ -960,21 +986,30 @@ export default function PlanogramEditor({
           onExportSvg={handleExportSvg}
           onExportPdf={handleExportPdf}
         >
-          <PlanogramCanvas
-            canvasRef={canvasRef}
-            layout={layout}
-            state={displayState}
-            skuById={skuById}
-            drag={drag}
-            shelfResize={shelfResize}
-            shelfWidthResize={shelfWidthResize}
-            selectedItemId={selectedItemId}
-            activeShelfId={activeShelfId}
-            onItemPointerDown={handleItemPointerDown}
-            onShelfResizePointerDown={handleShelfResizePointerDown}
-            onShelfWidthResizePointerDown={handleShelfWidthResizePointerDown}
-            onCanvasPointerDown={() => setSelectedItemId(null)}
-          />
+          {viewMode === "3d" ? (
+            <Planogram3DPreview
+              layout={layout}
+              state={displayState}
+              skuById={skuById}
+              fitToken={fit3dToken}
+            />
+          ) : (
+            <PlanogramCanvas
+              canvasRef={canvasRef}
+              layout={layout}
+              state={displayState}
+              skuById={skuById}
+              drag={drag}
+              shelfResize={shelfResize}
+              shelfWidthResize={shelfWidthResize}
+              selectedItemId={selectedItemId}
+              activeShelfId={activeShelfId}
+              onItemPointerDown={handleItemPointerDown}
+              onShelfResizePointerDown={handleShelfResizePointerDown}
+              onShelfWidthResizePointerDown={handleShelfWidthResizePointerDown}
+              onCanvasPointerDown={() => setSelectedItemId(null)}
+            />
+          )}
         </PlanogramViewport>
 
         <PlanogramItemInspector
