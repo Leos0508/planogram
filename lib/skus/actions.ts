@@ -268,6 +268,7 @@ export async function createSku(input: {
     });
 
     revalidatePath("/skus");
+    revalidatePath(`/skus/${created.id}`);
     revalidatePath("/planograms");
     return {
       ok: true,
@@ -348,6 +349,7 @@ export async function updateSku(input: {
     }
 
     revalidatePath("/skus");
+    revalidatePath(`/skus/${updated.id}`);
     revalidatePath("/planograms");
     return {
       ok: true,
@@ -396,6 +398,7 @@ export async function deleteSku(input: {
     await delIfOwnedSkuBlob(sku.imageUrl, access.workspace.id);
 
     revalidatePath("/skus");
+    revalidatePath(`/skus/${input.id}`);
     revalidatePath("/planograms");
     return { ok: true, data: { id: input.id } };
   } catch (error) {

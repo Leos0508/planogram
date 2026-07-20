@@ -21,20 +21,19 @@ import type { SkuImportSummary } from "@/lib/skus/actions";
 import { detectSkuImportFormat } from "@/lib/skus/import-parse";
 import { filterSkusByQuery } from "@/lib/skus/filter";
 import {
-  type SkuShape,
-  deriveFaceOnMm,
-  isSkuShape,
-  parseSkuPackaging,
-  readStoredPackaging,
-} from "@/lib/skus/packaging";
+  type ShapeMode,
+  type SkuFormState,
+  derivedFacePreview,
+  emptyForm,
+  formFromSku,
+  packagingInputFromForm,
+  parseForm,
+} from "@/lib/skus/form-state";
+import { parseSkuPackaging, readStoredPackaging } from "@/lib/skus/packaging";
 import type { Sku } from "@/lib/skus/queries";
-import {
-  isValidSkuFootprint,
-  normalizeSkuColor,
-  randomSkuColor,
-} from "@/lib/validation/sku";
 import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import {
+  CuboidIcon,
   PencilIcon,
   PlusIcon,
   SearchIcon,
@@ -42,103 +41,11 @@ import {
   UploadIcon,
   XIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 const SEARCH_DEBOUNCE_MS = 250;
-
-type ShapeMode = "NONE" | SkuShape;
-
-type SkuFormState = {
-  name: string;
-  sku: string;
-  width: string;
-  height: string;
-  color: string;
-  imageUrl: string;
-  imageFile: File | null;
-  clearImage: boolean;
-  shape: ShapeMode;
-  bodyDiameterMm: string;
-  heightMm: string;
-  endDiameterMm: string;
-  baseDiameterMm: string;
-  neckDiameterMm: string;
-  capacityMl: string;
-};
-
-const emptyForm = (): SkuFormState => ({
-  name: "",
-  sku: "",
-  width: "",
-  height: "",
-  color: randomSkuColor(),
-  imageUrl: "",
-  imageFile: null,
-  clearImage: false,
-  shape: "NONE",
-  bodyDiameterMm: "",
-  heightMm: "",
-  endDiameterMm: "",
-  baseDiameterMm: "",
-  neckDiameterMm: "",
-  capacityMl: "",
-});
-
-function formFromSku(sku: Sku): SkuFormState {
-  const packaging = readStoredPackaging(sku.shape, sku.packaging);
-  return {
-    name: sku.name,
-    sku: sku.sku,
-    width: String(sku.width),
-    height: String(sku.height),
-    color: sku.color,
-    imageUrl: sku.imageUrl ?? "",
-    imageFile: null,
-    clearImage: false,
-    shape: packaging?.shape ?? "NONE",
-    bodyDiameterMm:
-      packaging != null ? String(packaging.bodyDiameterMm) : "",
-    heightMm: packaging != null ? String(packaging.heightMm) : "",
-    endDiameterMm:
-      packaging?.shape === "CAN" ? String(packaging.endDiameterMm) : "",
-    baseDiameterMm:
-      packaging != null ? String(packaging.baseDiameterMm) : "",
-    neckDiameterMm:
-      packaging?.shape === "BOTTLE" ? String(packaging.neckDiameterMm) : "",
-    capacityMl:
-      packaging?.capacityMl != null ? String(packaging.capacityMl) : "",
-  };
-}
-
-function packagingInputFromForm(values: SkuFormState) {
-  const base = {
-    bodyDiameterMm: values.bodyDiameterMm,
-    heightMm: values.heightMm,
-    baseDiameterMm: values.baseDiameterMm,
-    capacityMl: values.capacityMl.trim() ? values.capacityMl : undefined,
-  };
-  if (values.shape === "CAN") {
-    return { ...base, endDiameterMm: values.endDiameterMm };
-  }
-  if (values.shape === "BOTTLE") {
-    return { ...base, neckDiameterMm: values.neckDiameterMm };
-  }
-  return null;
-}
-
-function derivedFacePreview(values: SkuFormState): {
-  width: string;
-  height: string;
-} | null {
-  if (values.shape === "NONE") return null;
-  const packaging = packagingInputFromForm(values);
-  if (!packaging) return null;
-  const parsed = parseSkuPackaging(values.shape, packaging);
-  if (!parsed.ok) return null;
-  const face = deriveFaceOnMm(parsed.data);
-  return { width: String(face.width), height: String(face.height) };
-}
 
 function replaceSearchParam(
   router: ReturnType<typeof useRouter>,
@@ -585,64 +492,6 @@ function SkuForm({
   );
 }
 
-function parseForm(values: SkuFormState) {
-  const color = normalizeSkuColor(values.color);
-  if (!color) {
-    return { ok: false as const, message: "Color must be a valid hex value (#rrggbb)" };
-  }
-
-  const imageFields = {
-    imageUrl: values.clearImage ? null : values.imageUrl.trim() || null,
-    imageFile: values.imageFile,
-    clearImage: values.clearImage,
-  };
-
-  if (values.shape === "NONE") {
-    const width = Number.parseInt(values.width, 10);
-    const height = Number.parseInt(values.height, 10);
-    if (!isValidSkuFootprint(width, height)) {
-      return { ok: false as const, message: "Width and height must be positive mm" };
-    }
-    return {
-      ok: true as const,
-      data: {
-        name: values.name.trim(),
-        sku: values.sku.trim(),
-        width,
-        height,
-        color,
-        shape: null as SkuShape | null,
-        packaging: null as unknown,
-        ...imageFields,
-      },
-    };
-  }
-
-  if (!isSkuShape(values.shape)) {
-    return { ok: false as const, message: "Shape must be CAN or BOTTLE" };
-  }
-
-  const packaging = packagingInputFromForm(values);
-  const parsed = parseSkuPackaging(values.shape, packaging);
-  if (!parsed.ok) {
-    return { ok: false as const, message: parsed.message };
-  }
-
-  return {
-    ok: true as const,
-    data: {
-      name: values.name.trim(),
-      sku: values.sku.trim(),
-      width: parsed.face.width,
-      height: parsed.face.height,
-      color,
-      shape: parsed.data.shape,
-      packaging: packagingInputFromForm(values),
-      ...imageFields,
-    },
-  };
-}
-
 export default function SkuManager({
   skus,
   canWrite,
@@ -1061,6 +910,18 @@ export default function SkuManager({
                         color={sku.color}
                         packaging={packaging}
                       />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        title={`Open packaging editor · ${sku.name}`}
+                        aria-label={`Open packaging editor for ${sku.name}`}
+                        asChild
+                      >
+                        <Link href={`/skus/${sku.id}`}>
+                          <CuboidIcon className="size-4" />
+                        </Link>
+                      </Button>
                       {canWrite ? (
                         <>
                           <Button
