@@ -96,6 +96,7 @@ const skuById = new Map([
       sku: "CAN-355",
       width: 66,
       height: 122,
+      color: "#3b82f6",
       imageUrl: "https://example.com/can.png",
     },
   ],
@@ -196,6 +197,7 @@ describe("renderPlanogramExportHtml", () => {
     expect(html).toContain("visual--overview");
     expect(html).toContain("Shelf specs");
     expect(html).toContain("SKU list");
+    expect(html).toContain("<th>Color</th>");
     expect(html).toContain("CAN-355");
     expect(html).toContain("66 × 122");
     expect(html).toContain('src="https://example.com/can.png"');
@@ -203,7 +205,22 @@ describe("renderPlanogramExportHtml", () => {
     expect(html).not.toContain("Shelves 1–4");
   });
 
-  it("shows color swatch in SKU list when image is missing", () => {
+  it("shows Color column with swatch and hex when image is present", () => {
+    const { state, layout } = buildMultiShelfFixture(1);
+    const html = renderPlanogramExportHtml({
+      layout,
+      state,
+      planogramName: "Image + Color Bay",
+      skuById,
+    });
+
+    expect(html).toContain('src="https://example.com/can.png"');
+    expect(html).toContain('class="color-cell"');
+    expect(html).toContain('fill="#3b82f6"');
+    expect(html).toContain("<code>#3b82f6</code>");
+  });
+
+  it("shows Color column when image is missing and keeps image cell non-blank", () => {
     const { state, layout } = buildMultiShelfFixture(1);
     const html = renderPlanogramExportHtml({
       layout,
@@ -225,9 +242,12 @@ describe("renderPlanogramExportHtml", () => {
       ]),
     });
 
-    expect(html).toContain('class="swatch"');
-    expect(html).toContain("background:#22c55e");
+    expect(html).toContain('class="thumb"');
+    expect(html).toContain('class="placeholder">—</span>');
+    expect(html).not.toContain("<img");
+    expect(html).toContain('class="color-cell"');
     expect(html).toContain('fill="#22c55e"');
+    expect(html).toContain("<code>#22c55e</code>");
   });
 
   it("shows empty SKU message when nothing is placed", () => {
@@ -246,6 +266,7 @@ describe("renderPlanogramExportHtml", () => {
     });
 
     expect(html).toContain("No SKUs placed on this planogram.");
+    expect(html).toContain('colspan="6"');
   });
 
   it("scales overview for multi-shelf fixtures without sectioning at 5 shelves", () => {
