@@ -1,6 +1,7 @@
 "use client";
 
 import CatalogPageLayout from "@/components/catalog-page-layout";
+import { SkuPackagingMeshPreviewButton } from "@/components/sku-packaging-mesh-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -191,6 +192,14 @@ function SkuForm({
 
   const facePreview = derivedFacePreview(values);
   const isParametric = values.shape !== "NONE";
+  const rawPackaging = isParametric ? packagingInputFromForm(values) : null;
+  const formPackaging =
+    rawPackaging != null
+      ? (() => {
+          const parsed = parseSkuPackaging(values.shape, rawPackaging);
+          return parsed.ok ? parsed.data : null;
+        })()
+      : null;
 
   return (
     <form
@@ -553,13 +562,24 @@ function SkuForm({
           />
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button type="submit" size="sm" disabled={pending || Boolean(fileError)}>
           {submitLabel}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           Cancel
         </Button>
+        {isParametric ? (
+          <SkuPackagingMeshPreviewButton
+            name={values.name.trim() || "SKU"}
+            color={values.color}
+            packaging={formPackaging}
+            variant="outline"
+            size="sm"
+            label="Preview 3D"
+            disabledReason="Enter valid can/bottle dimensions to preview 3D"
+          />
+        ) : null}
       </div>
     </form>
   );
@@ -1003,13 +1023,13 @@ export default function SkuManager({
                 <th className="px-4 py-2 font-semibold">Shape</th>
                 <th className="px-4 py-2 font-semibold">Color</th>
                 <th className="px-4 py-2 font-semibold">Footprint (mm)</th>
-                {canWrite ? (
-                  <th className="px-4 py-2 font-semibold">Actions</th>
-                ) : null}
+                <th className="px-4 py-2 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredSkus.map((sku) => (
+              {filteredSkus.map((sku) => {
+                const packaging = readStoredPackaging(sku.shape, sku.packaging);
+                return (
                 <tr key={sku.id} className="border-b last:border-b-0">
                   <td className="px-4 py-3">{sku.name}</td>
                   <td className="px-4 py-3 font-mono text-xs">{sku.sku}</td>
@@ -1034,39 +1054,47 @@ export default function SkuManager({
                   <td className="px-4 py-3 font-mono text-xs">
                     {sku.width} × {sku.height}
                   </td>
-                  {canWrite ? (
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          title={`Edit ${sku.name}`}
-                          disabled={pending}
-                          onClick={() => {
-                            setMode("edit");
-                            setEditingId(sku.id);
-                            setError(null);
-                            setImportSummary(null);
-                          }}
-                        >
-                          <PencilIcon className="size-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          title={`Delete ${sku.name}`}
-                          disabled={pending}
-                          onClick={() => handleDelete(sku)}
-                        >
-                          <Trash2Icon className="size-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </td>
-                  ) : null}
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1">
+                      <SkuPackagingMeshPreviewButton
+                        name={sku.name}
+                        color={sku.color}
+                        packaging={packaging}
+                      />
+                      {canWrite ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            title={`Edit ${sku.name}`}
+                            disabled={pending}
+                            onClick={() => {
+                              setMode("edit");
+                              setEditingId(sku.id);
+                              setError(null);
+                              setImportSummary(null);
+                            }}
+                          >
+                            <PencilIcon className="size-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            title={`Delete ${sku.name}`}
+                            disabled={pending}
+                            onClick={() => handleDelete(sku)}
+                          >
+                            <Trash2Icon className="size-4 text-destructive" />
+                          </Button>
+                        </>
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
