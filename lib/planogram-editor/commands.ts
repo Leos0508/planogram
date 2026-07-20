@@ -21,4 +21,5 @@ export const EDITOR_COMMANDS: EditorCommand[] = [
   { action: "Delete item", keys: "Delete" },
   { action: "Cancel drag", keys: "Esc" },
   { action: "Fit to view", keys: "Toolbar button" },
+  { action: "3D preview", keys: "Toolbar cube toggle" },
 ];

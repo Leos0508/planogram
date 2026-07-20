@@ -16,7 +16,11 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function useCanvasViewport(canvasRef: React.RefObject<HTMLElement | null>) {
+export function useCanvasViewport(
+  canvasRef: React.RefObject<HTMLElement | null>,
+  options?: { enabled?: boolean },
+) {
+  const enabled = options?.enabled ?? true;
   const viewportRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ViewportTransform>({ x: 0, y: 0, scale: 1 });
   const applyTransformRef = useRef<(next: ViewportTransform) => void>(() => {});
@@ -83,10 +87,12 @@ export function useCanvasViewport(canvasRef: React.RefObject<HTMLElement | null>
   }, [applyTransform, canvasRef]);
 
   useEffect(() => {
+    if (!enabled) return;
     fitToView();
-  }, [fitToView]);
+  }, [enabled, fitToView]);
 
   useEffect(() => {
+    if (!enabled) return;
     const viewport = viewportRef.current;
     if (!viewport) return;
 
@@ -110,9 +116,11 @@ export function useCanvasViewport(canvasRef: React.RefObject<HTMLElement | null>
 
     viewport.addEventListener("wheel", onWheel, { passive: false });
     return () => viewport.removeEventListener("wheel", onWheel);
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const endPan = (event?: PointerEvent) => {
       const pan = panningRef.current;
       if (!pan) return;
@@ -181,7 +189,7 @@ export function useCanvasViewport(canvasRef: React.RefObject<HTMLElement | null>
       window.removeEventListener("pointerdown", onPointerDown, true);
       endPan();
     };
-  }, []);
+  }, [enabled]);
 
   return {
     viewportRef,
