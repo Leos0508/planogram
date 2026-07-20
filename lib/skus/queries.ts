@@ -9,6 +9,7 @@ export type Sku = {
   sku: string;
   width: number;
   height: number;
+  color: string;
   imageUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -36,6 +37,7 @@ export async function getSkus(): Promise<QueryResult<Sku[]>> {
         sku: sku.sku,
         width: sku.width,
         height: sku.height,
+        color: sku.color,
         imageUrl: sku.imageUrl,
         createdAt: sku.createdAt,
         updatedAt: sku.updatedAt,
@@ -57,6 +59,7 @@ export type SkuDetail = {
   sku: string;
   width: number;
   height: number;
+  color: string;
   imageUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -77,6 +80,7 @@ export async function getSku(id: string): Promise<QueryResult<SkuDetail>> {
         sku: true,
         width: true,
         height: true,
+        color: true,
         imageUrl: true,
         createdAt: true,
         updatedAt: true,

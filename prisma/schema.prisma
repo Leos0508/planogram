@@ -86,6 +86,8 @@ model SKU {
   sku         String
   width       Int
   height      Int
+  /// Persisted display color (#rrggbb) used when imageUrl is missing.
+  color       String
   imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

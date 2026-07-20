@@ -3,6 +3,7 @@ import {
   SEED_CATALOG_SKUS,
   seedCatalogForWorkspace,
 } from "@/lib/skus/seed-catalog";
+import { skuColorFromKey } from "@/lib/validation/sku";
 
 describe("SEED_CATALOG_SKUS", () => {
   it("has 6–10 unique can/bottle codes with positive mm dims", () => {
@@ -60,6 +61,7 @@ describe("seedCatalogForWorkspace", () => {
         name: row.name,
         width: row.width,
         height: row.height,
+        color: skuColorFromKey(row.sku),
       })),
       skipDuplicates: true,
     });

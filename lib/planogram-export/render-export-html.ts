@@ -88,7 +88,9 @@ export function renderPlanogramExportHtml({
     .map((sku) => {
       const image = sku.imageUrl
         ? `<img src="${escapeHtml(sku.imageUrl)}" alt="" width="40" height="40" />`
-        : `<span class="placeholder">—</span>`;
+        : sku.color
+          ? `<span class="swatch" style="background:${escapeHtml(sku.color)}" title="${escapeHtml(sku.color)}"></span>`
+          : `<span class="placeholder">—</span>`;
       return `<tr>
         <td class="thumb">${image}</td>
         <td>${escapeHtml(sku.name)}</td>
@@ -151,6 +153,13 @@ export function renderPlanogramExportHtml({
       object-fit: contain;
       display: block;
       margin: 0 auto;
+    }
+    td.thumb .swatch {
+      display: block;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto;
+      border: 1px solid #e4e4e7;
     }
     .placeholder { color: #a1a1aa; }
     .muted { color: #71717a; }

@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { SEED_CATALOG_SKUS } from "../lib/skus/seed-catalog";
+import { skuColorFromKey } from "../lib/validation/sku";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -27,6 +28,7 @@ async function main() {
   });
 
   for (const data of SEED_CATALOG_SKUS) {
+    const color = skuColorFromKey(data.sku);
     await prisma.sKU.upsert({
       where: {
         workspaceId_sku: {
@@ -38,10 +40,12 @@ async function main() {
         name: data.name,
         width: data.width,
         height: data.height,
+        color,
       },
       create: {
         workspaceId: workspace.id,
         ...data,
+        color,
       },
     });
   }

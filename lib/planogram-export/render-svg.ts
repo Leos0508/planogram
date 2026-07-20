@@ -9,6 +9,7 @@ import { printHtmlDocument } from "@/lib/planogram-export/print-html";
 
 export type ExportSku = {
   name: string;
+  color?: string | null;
   imageUrl?: string | null;
 };
 
@@ -89,13 +90,17 @@ export function renderPlanogramSvg({
           ? `<image href="${escapeXml(sku.imageUrl)}" x="${x + 2}" y="${y + 2}" width="${width - 4}" height="${height - 4}" preserveAspectRatio="xMidYMid meet" clip-path="url(#clip-${item.itemId})" />`
           : "";
 
+      const fill = sku?.imageUrl
+        ? "#dbeafe"
+        : escapeXml(sku?.color && /^#[0-9a-fA-F]{6}$/.test(sku.color) ? sku.color : "#dbeafe");
+
       return `
         <defs>
           <clipPath id="clip-${item.itemId}">
             <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="2" />
           </clipPath>
         </defs>
-        <rect x="${x}" y="${y}" width="${width}" height="${height}" fill="#dbeafe" stroke="#2563eb" stroke-width="1" rx="2" />
+        <rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${fill}" stroke="#2563eb" stroke-width="1" rx="2" />
         ${image}
         ${dividers}
         <text x="${x + width / 2}" y="${y + height / 2}" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="${Math.max(8, mmToPx(10))}" fill="#18181b">${label}</text>

@@ -705,6 +705,7 @@ export default function PlanogramEditor({
           width: sku.width,
           height: sku.height,
           imageUrl: sku.imageUrl,
+          color: sku.color,
         },
       ]),
     );

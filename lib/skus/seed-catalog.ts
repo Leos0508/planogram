@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { skuColorFromKey } from "@/lib/validation/sku";
 
 /**
  * First-run catalog: industry-ish face-on footprints (mm).
@@ -79,6 +80,7 @@ export async function seedCatalogForWorkspace(
       name: row.name,
       width: row.width,
       height: row.height,
+      color: skuColorFromKey(row.sku),
     })),
     skipDuplicates: true,
   });

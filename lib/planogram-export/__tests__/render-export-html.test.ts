@@ -85,6 +85,32 @@ describe("renderPlanogramExportHtml", () => {
     expect(html).toContain(">2</td>");
   });
 
+  it("shows color swatch in SKU list when image is missing", () => {
+    const html = renderPlanogramExportHtml({
+      layout,
+      state,
+      planogramName: "Color Bay",
+      skuById: new Map([
+        [
+          "sku-1",
+          {
+            id: "sku-1",
+            name: "Standard can 355 ml",
+            sku: "CAN-355",
+            width: 66,
+            height: 122,
+            color: "#22c55e",
+            imageUrl: null,
+          },
+        ],
+      ]),
+    });
+
+    expect(html).toContain('class="swatch"');
+    expect(html).toContain("background:#22c55e");
+    expect(html).toContain('fill="#22c55e"');
+  });
+
   it("shows empty SKU message when nothing is placed", () => {
     const emptyState: PlanogramState = {
       ...state,
