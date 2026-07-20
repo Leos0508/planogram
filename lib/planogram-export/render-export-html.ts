@@ -152,13 +152,15 @@ export function renderPlanogramExportHtml({
     .map((sku) => {
       const image = sku.imageUrl
         ? `<img src="${escapeHtml(sku.imageUrl)}" alt="" width="40" height="40" />`
-        : sku.color
-          ? `<span class="swatch" style="background:${escapeHtml(sku.color)}" title="${escapeHtml(sku.color)}"></span>`
-          : `<span class="placeholder">—</span>`;
+        : `<span class="placeholder">—</span>`;
+      const color = sku.color
+        ? `<span class="color-cell" title="${escapeHtml(sku.color)}"><svg class="swatch" width="14" height="14" aria-hidden="true"><rect width="14" height="14" fill="${escapeHtml(sku.color)}" stroke="#a1a1aa" stroke-width="1" /></svg><code>${escapeHtml(sku.color)}</code></span>`
+        : `<span class="placeholder">—</span>`;
       return `<tr>
         <td class="thumb">${image}</td>
         <td>${escapeHtml(sku.name)}</td>
         <td>${escapeHtml(sku.sku)}</td>
+        <td class="color">${color}</td>
         <td>${sku.width} × ${sku.height}</td>
         <td>${facingSummary(state, sku.id)}</td>
       </tr>`;
@@ -167,7 +169,7 @@ export function renderPlanogramExportHtml({
 
   const emptySkuRow =
     skuRows.length === 0
-      ? `<tr><td colspan="5" class="muted">No SKUs placed on this planogram.</td></tr>`
+      ? `<tr><td colspan="6" class="muted">No SKUs placed on this planogram.</td></tr>`
       : "";
 
   // Browsers use <title> as the Save-as-PDF suggested filename (PLA-72).
@@ -218,12 +220,22 @@ export function renderPlanogramExportHtml({
       display: block;
       margin: 0 auto;
     }
-    td.thumb .swatch {
+    td.color { white-space: nowrap; }
+    .color-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .color-cell .swatch {
       display: block;
-      width: 40px;
-      height: 40px;
-      margin: 0 auto;
-      border: 1px solid #e4e4e7;
+      flex-shrink: 0;
+      /* SVG fill prints; keep adjust for any CSS backgrounds (e.g. th). */
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+    .color-cell code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
     }
     .placeholder { color: #a1a1aa; }
     .muted { color: #71717a; }
@@ -234,6 +246,10 @@ export function renderPlanogramExportHtml({
     }
     @media print {
       .hint { display: none; }
+      th, .color-cell .swatch {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
     }
   </style>
 </head>
@@ -271,6 +287,7 @@ export function renderPlanogramExportHtml({
         <th>Image</th>
         <th>Name</th>
         <th>Code</th>
+        <th>Color</th>
         <th>Size (W × H mm)</th>
         <th>Facings</th>
       </tr>
