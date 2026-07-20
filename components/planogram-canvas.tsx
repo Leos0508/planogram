@@ -239,10 +239,18 @@ export default function PlanogramCanvas({
                 y={yPx}
                 width={widthPx}
                 height={heightPx}
+                fill={
+                  sku && !sku.imageUrl ? sku.color : undefined
+                }
+                fillOpacity={
+                  sku && !sku.imageUrl ? (selected ? 0.55 : 0.4) : undefined
+                }
                 className={
-                  selected
-                    ? "cursor-grab fill-primary/35 stroke-primary"
-                    : "cursor-grab fill-primary/20 stroke-primary"
+                  sku && !sku.imageUrl
+                    ? "cursor-grab stroke-primary"
+                    : selected
+                      ? "cursor-grab fill-primary/35 stroke-primary"
+                      : "cursor-grab fill-primary/20 stroke-primary"
                 }
                 strokeWidth={selected ? 2 : 1}
                 rx={2}

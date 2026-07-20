@@ -23,7 +23,10 @@ export default function SkuCard({
         )
       }
     >
-      <div className="size-10 overflow-hidden rounded-md bg-muted">
+      <div
+        className="size-10 overflow-hidden rounded-md border border-border/60"
+        style={sku.imageUrl ? undefined : { backgroundColor: sku.color }}
+      >
         {sku.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -31,7 +34,9 @@ export default function SkuCard({
             alt=""
             className="size-full object-cover"
           />
-        ) : null}
+        ) : (
+          <span className="sr-only">Color {sku.color}</span>
+        )}
       </div>
       <p className="line-clamp-1 text-center text-sm">{sku.name}</p>
     </div>

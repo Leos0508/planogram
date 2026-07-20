@@ -3,7 +3,11 @@
 import { delIfOwnedSkuBlob, putSkuImage, validateSkuImageFile } from "@/lib/blob/sku-image";
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
-import { isValidSkuFootprint } from "@/lib/validation/sku";
+import {
+  isValidSkuFootprint,
+  normalizeSkuColor,
+  resolveCreateSkuColor,
+} from "@/lib/validation/sku";
 import {
   findSkuInWorkspace,
   requireWorkspaceWrite,
@@ -16,6 +20,7 @@ export type SkuRecord = {
   sku: string;
   width: number;
   height: number;
+  color: string;
   imageUrl: string | null;
 };
 
@@ -39,7 +44,10 @@ function validateSkuInput(input: {
   sku: string;
   width: number;
   height: number;
+  color?: string | null;
   imageUrl?: string | null;
+  /** When true, empty/missing color is an error (update). Create allows omit → random. */
+  requireColor?: boolean;
 }): string | null {
   const name = input.name.trim();
   const code = input.sku.trim();
@@ -48,6 +56,19 @@ function validateSkuInput(input: {
   if (!code) return "SKU code is required";
   if (!isValidSkuFootprint(input.width, input.height)) {
     return "Width and height must be positive numbers (mm)";
+  }
+
+  const colorProvided =
+    input.color !== undefined &&
+    input.color !== null &&
+    input.color.trim() !== "";
+
+  if (colorProvided && normalizeSkuColor(input.color) === null) {
+    return "Color must be a valid hex value (#rrggbb)";
+  }
+
+  if (input.requireColor && !colorProvided) {
+    return "Color is required";
   }
 
   if (
@@ -94,6 +115,7 @@ export async function createSku(input: {
   sku: string;
   width: number;
   height: number;
+  color?: string | null;
   imageUrl?: string | null;
 }): Promise<ActionResult<SkuRecord>> {
   const error = validateSkuInput(input);
@@ -103,6 +125,8 @@ export async function createSku(input: {
     const access = await requireWorkspaceWrite();
     if (!access.ok) return { ok: false, message: access.message };
 
+    const color = resolveCreateSkuColor(input.color);
+
     const created = await prisma.sKU.create({
       data: {
         workspaceId: access.workspace.id,
@@ -110,6 +134,7 @@ export async function createSku(input: {
         sku: input.sku.trim(),
         width: Math.round(input.width),
         height: Math.round(input.height),
+        color,
         imageUrl: normalizeImageUrl(input.imageUrl),
       },
     });
@@ -132,9 +157,10 @@ export async function updateSku(input: {
   sku: string;
   width: number;
   height: number;
+  color: string;
   imageUrl?: string | null;
 }): Promise<ActionResult<SkuRecord>> {
-  const error = validateSkuInput(input);
+  const error = validateSkuInput({ ...input, requireColor: true });
   if (error) return { ok: false, message: error };
 
   try {
@@ -146,6 +172,8 @@ export async function updateSku(input: {
 
     const nextImageUrl = normalizeImageUrl(input.imageUrl);
     const previousImageUrl = existing.imageUrl;
+    const color = normalizeSkuColor(input.color);
+    if (!color) return { ok: false, message: "Color must be a valid hex value (#rrggbb)" };
 
     const updated = await prisma.sKU.update({
       where: { id: input.id },
@@ -154,6 +182,7 @@ export async function updateSku(input: {
         sku: input.sku.trim(),
         width: Math.round(input.width),
         height: Math.round(input.height),
+        color,
         imageUrl: nextImageUrl,
       },
     });

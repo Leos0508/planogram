@@ -17,7 +17,11 @@ import {
 } from "@/lib/skus/actions";
 import { filterSkusByQuery } from "@/lib/skus/filter";
 import type { Sku } from "@/lib/skus/queries";
-import { isValidSkuFootprint } from "@/lib/validation/sku";
+import {
+  isValidSkuFootprint,
+  normalizeSkuColor,
+  randomSkuColor,
+} from "@/lib/validation/sku";
 import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import { PencilIcon, PlusIcon, SearchIcon, Trash2Icon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -30,6 +34,7 @@ type SkuFormState = {
   sku: string;
   width: string;
   height: string;
+  color: string;
   imageUrl: string;
   imageFile: File | null;
   clearImage: boolean;
@@ -40,6 +45,7 @@ const emptyForm = (): SkuFormState => ({
   sku: "",
   width: "",
   height: "",
+  color: randomSkuColor(),
   imageUrl: "",
   imageFile: null,
   clearImage: false,
@@ -155,6 +161,37 @@ function SkuForm({
           />
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="sku-color">Display color</Label>
+          <div className="flex items-center gap-3">
+            <Input
+              id="sku-color"
+              type="color"
+              value={values.color}
+              onChange={(event) =>
+                setValues((prev) => ({ ...prev, color: event.target.value }))
+              }
+              className="h-9 w-14 cursor-pointer p-1"
+              required
+            />
+            <Input
+              id="sku-color-hex"
+              type="text"
+              value={values.color}
+              onChange={(event) =>
+                setValues((prev) => ({ ...prev, color: event.target.value }))
+              }
+              className="font-mono uppercase"
+              pattern="^#?[0-9A-Fa-f]{6}$"
+              maxLength={7}
+              aria-label="Display color hex"
+              required
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Used on canvas, tray, and exports when no image is set.
+          </p>
+        </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="sku-image-file">Image (optional)</Label>
           <Input
             id="sku-image-file"
@@ -261,6 +298,10 @@ function parseForm(values: SkuFormState) {
   if (!isValidSkuFootprint(width, height)) {
     return { ok: false as const, message: "Width and height must be positive mm" };
   }
+  const color = normalizeSkuColor(values.color);
+  if (!color) {
+    return { ok: false as const, message: "Color must be a valid hex value (#rrggbb)" };
+  }
   return {
     ok: true as const,
     data: {
@@ -268,6 +309,7 @@ function parseForm(values: SkuFormState) {
       sku: values.sku.trim(),
       width,
       height,
+      color,
       imageUrl: values.clearImage
         ? null
         : values.imageUrl.trim() || null,
@@ -356,6 +398,7 @@ export default function SkuManager({
         sku: parsed.data.sku,
         width: parsed.data.width,
         height: parsed.data.height,
+        color: parsed.data.color,
         imageUrl: image.imageUrl,
       });
       if (!result.ok) {
@@ -390,6 +433,7 @@ export default function SkuManager({
         sku: parsed.data.sku,
         width: parsed.data.width,
         height: parsed.data.height,
+        color: parsed.data.color,
         imageUrl: image.imageUrl,
       });
       if (!result.ok) {
@@ -504,6 +548,7 @@ export default function SkuManager({
             sku: editingSku.sku,
             width: String(editingSku.width),
             height: String(editingSku.height),
+            color: editingSku.color,
             imageUrl: editingSku.imageUrl ?? "",
             imageFile: null,
             clearImage: false,
@@ -534,6 +579,7 @@ export default function SkuManager({
               <tr>
                 <th className="px-4 py-2 font-semibold">Name</th>
                 <th className="px-4 py-2 font-semibold">Code</th>
+                <th className="px-4 py-2 font-semibold">Color</th>
                 <th className="px-4 py-2 font-semibold">Footprint (mm)</th>
                 {canWrite ? (
                   <th className="px-4 py-2 font-semibold">Actions</th>
@@ -545,6 +591,17 @@ export default function SkuManager({
                 <tr key={sku.id} className="border-b last:border-b-0">
                   <td className="px-4 py-3">{sku.name}</td>
                   <td className="px-4 py-3 font-mono text-xs">{sku.sku}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="size-4 shrink-0 border"
+                        style={{ backgroundColor: sku.color }}
+                        title={sku.color}
+                        aria-hidden
+                      />
+                      <span className="font-mono text-xs uppercase">{sku.color}</span>
+                    </span>
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs">
                     {sku.width} × {sku.height}
                   </td>
