@@ -947,42 +947,44 @@ export default function PlanogramEditor({
 
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-      <PlanogramViewport
-        viewportRef={viewportRef}
-        transform={transform}
-        onFitToView={fitToView}
-        canUndo={canWrite && history.canUndo}
-        canRedo={canWrite && history.canRedo}
-        onUndo={canWrite ? () => void handleUndo() : undefined}
-        onRedo={canWrite ? () => void handleRedo() : undefined}
-        onExportSvg={handleExportSvg}
-        onExportPdf={handleExportPdf}
-      >
-        <PlanogramCanvas
-          canvasRef={canvasRef}
-          layout={layout}
-          state={displayState}
-          skuById={skuById}
-          drag={drag}
-          shelfResize={shelfResize}
-          shelfWidthResize={shelfWidthResize}
-          selectedItemId={selectedItemId}
-          activeShelfId={activeShelfId}
-          onItemPointerDown={handleItemPointerDown}
-          onShelfResizePointerDown={handleShelfResizePointerDown}
-          onShelfWidthResizePointerDown={handleShelfWidthResizePointerDown}
-          onCanvasPointerDown={() => setSelectedItemId(null)}
-        />
-      </PlanogramViewport>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <PlanogramViewport
+          viewportRef={viewportRef}
+          transform={transform}
+          onFitToView={fitToView}
+          canUndo={canWrite && history.canUndo}
+          canRedo={canWrite && history.canRedo}
+          onUndo={canWrite ? () => void handleUndo() : undefined}
+          onRedo={canWrite ? () => void handleRedo() : undefined}
+          onExportSvg={handleExportSvg}
+          onExportPdf={handleExportPdf}
+        >
+          <PlanogramCanvas
+            canvasRef={canvasRef}
+            layout={layout}
+            state={displayState}
+            skuById={skuById}
+            drag={drag}
+            shelfResize={shelfResize}
+            shelfWidthResize={shelfWidthResize}
+            selectedItemId={selectedItemId}
+            activeShelfId={activeShelfId}
+            onItemPointerDown={handleItemPointerDown}
+            onShelfResizePointerDown={handleShelfResizePointerDown}
+            onShelfWidthResizePointerDown={handleShelfWidthResizePointerDown}
+            onCanvasPointerDown={() => setSelectedItemId(null)}
+          />
+        </PlanogramViewport>
 
-      <PlanogramItemInspector
-        state={state}
-        selectedItemId={selectedItemId}
-        skuById={skuById}
-        canWrite={canWrite}
-        onChangeFacings={changeSelectedFacings}
-        onShelfLayout={(mode) => void applyShelfLayout(mode)}
-      />
+        <PlanogramItemInspector
+          state={state}
+          selectedItemId={selectedItemId}
+          skuById={skuById}
+          canWrite={canWrite}
+          onChangeFacings={changeSelectedFacings}
+          onShelfLayout={(mode) => void applyShelfLayout(mode)}
+        />
+      </div>
 
       {showCursorPreview && (
         <DragItemPreview

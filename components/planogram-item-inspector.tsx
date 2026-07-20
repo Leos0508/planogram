@@ -50,7 +50,7 @@ export default function PlanogramItemInspector({
   const baseRowCount = shelf.items.filter((row) => row.y === 0).length;
 
   return (
-    <div className="absolute bottom-24 right-3 z-30 w-56 border bg-background/95 p-3 shadow-sm">
+    <div className="absolute bottom-3 right-3 z-30 w-56 border bg-background/95 p-3 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-widest">
         Selection
       </p>
