@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { QueryResult } from "@/lib/result";
+import type { SkuShape } from "@/lib/skus/packaging";
 import { seedCatalogForWorkspace } from "@/lib/skus/seed-catalog";
 import { requireWorkspace } from "@/lib/workspaces/current";
 
@@ -11,6 +12,8 @@ export type Sku = {
   height: number;
   color: string;
   imageUrl: string | null;
+  shape: SkuShape | null;
+  packaging: unknown;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -39,6 +42,8 @@ export async function getSkus(): Promise<QueryResult<Sku[]>> {
         height: sku.height,
         color: sku.color,
         imageUrl: sku.imageUrl,
+        shape: sku.shape,
+        packaging: sku.packaging,
         createdAt: sku.createdAt,
         updatedAt: sku.updatedAt,
       })),
@@ -61,6 +66,8 @@ export type SkuDetail = {
   height: number;
   color: string;
   imageUrl: string | null;
+  shape: SkuShape | null;
+  packaging: unknown;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -82,6 +89,8 @@ export async function getSku(id: string): Promise<QueryResult<SkuDetail>> {
         height: true,
         color: true,
         imageUrl: true,
+        shape: true,
+        packaging: true,
         createdAt: true,
         updatedAt: true,
       },
