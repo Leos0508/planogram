@@ -33,7 +33,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `pnpm typecheck` | TypeScript (`tsc --noEmit`) |
 | `pnpm test` | Vitest unit tests (engine) |
 | `pnpm test:e2e` | Playwright smoke (auth, catalogs, settings) + multi-workspace (`e2e/multi-workspace.spec.ts`) |
-| `pnpm screenshots` | Full-page route captures → `e2e/screenshots/` (UI audit; app must be running) |
+| `pnpm screenshots` | Full-page UI audit captures (light/dark, editors 2D/3D) → `e2e/screenshots/` — see [`docs/UI_SCREENSHOT_AUDIT.md`](docs/UI_SCREENSHOT_AUDIT.md) |
 | `pnpm build` / `pnpm start` | Production build |
 
 First E2E / screenshot run installs Chromium via Playwright:
@@ -41,7 +41,7 @@ First E2E / screenshot run installs Chromium via Playwright:
 ```bash
 pnpm exec playwright install chromium
 pnpm test:e2e
-# optional UI audit artifacts (dev server on :3000):
+# optional UI audit artifacts (dev server on :3000; see docs/UI_SCREENSHOT_AUDIT.md):
 pnpm screenshots
 ```
 
@@ -63,5 +63,6 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 - Seed SKUs: [`docs/SEED_SKU_SPECS.md`](docs/SEED_SKU_SPECS.md)
 - SKU batch import: [`docs/SKU_IMPORT.md`](docs/SKU_IMPORT.md) · [`docs/examples/sku-import-example.csv`](docs/examples/sku-import-example.csv)
 - Parametric can/bottle packaging + editors / planogram 3D: [`docs/SKU_PACKAGING.md`](docs/SKU_PACKAGING.md)
+- UI screenshot audit (Plan 02 S5): [`docs/UI_SCREENSHOT_AUDIT.md`](docs/UI_SCREENSHOT_AUDIT.md)
 - Blob: [`docs/BLOB_SMOKE_TEST.md`](docs/BLOB_SMOKE_TEST.md)
 - Workspace: [`docs/WORKSPACE_MIGRATION.md`](docs/WORKSPACE_MIGRATION.md) · [`docs/WORKSPACE_TENANCY_TEST.md`](docs/WORKSPACE_TENANCY_TEST.md)

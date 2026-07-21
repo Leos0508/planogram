@@ -74,3 +74,4 @@ Shared form helpers: `lib/skus/form-state.ts`.
 - Seed face-on catalog: [`docs/SEED_SKU_SPECS.md`](SEED_SKU_SPECS.md)
 - Batch import: [`docs/SKU_IMPORT.md`](SKU_IMPORT.md)
 - Plan 02: [Linear doc](https://linear.app/planogram/document/development-plan-advanced-product-plan-02-45e4ae89a60f)
+- UI audit screenshots (packaging + planogram 2D/3D): [`docs/UI_SCREENSHOT_AUDIT.md`](UI_SCREENSHOT_AUDIT.md)
