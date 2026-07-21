@@ -220,6 +220,8 @@ export default function PlanogramCanvas({
           }
 
           const selected = selectedItemId === item.itemId;
+          const highlighted =
+            selected || draggingItemId === item.itemId;
           const facingsWide = facingsByItemId.get(item.itemId) ?? 1;
           const unitWidthPx = mmToPx(item.rect.width / facingsWide);
           const sku = skuById.get(item.skuId);
@@ -227,6 +229,9 @@ export default function PlanogramCanvas({
           const yPx = toCanvasPxY(item.rect.y, originY);
           const widthPx = mmToPx(item.rect.width);
           const heightPx = mmToPx(item.rect.height);
+          const strokeClass = highlighted
+            ? "stroke-primary"
+            : "stroke-muted-foreground";
 
           return (
             <g key={item.itemId}>
@@ -248,12 +253,12 @@ export default function PlanogramCanvas({
                 }
                 className={
                   sku && !sku.imageUrl
-                    ? "cursor-grab stroke-primary"
-                    : selected
-                      ? "cursor-grab fill-primary/35 stroke-primary"
-                      : "cursor-grab fill-primary/20 stroke-primary"
+                    ? `cursor-grab ${strokeClass}`
+                    : highlighted
+                      ? `cursor-grab fill-primary/35 ${strokeClass}`
+                      : `cursor-grab fill-primary/20 ${strokeClass}`
                 }
-                strokeWidth={selected ? 2 : 1}
+                strokeWidth={highlighted ? 2 : 1}
                 rx={2}
                 onPointerDown={(event) =>
                   onItemPointerDown(
@@ -288,7 +293,11 @@ export default function PlanogramCanvas({
                       y1={yPx}
                       x2={xPx + unitWidthPx * (index + 1)}
                       y2={yPx + heightPx}
-                      className="stroke-primary/40"
+                      className={
+                        highlighted
+                          ? "stroke-primary/40"
+                          : "stroke-muted-foreground/40"
+                      }
                       strokeWidth={1}
                     />
                   ))
