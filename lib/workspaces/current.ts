@@ -1,9 +1,10 @@
+import { cache } from "react";
 import {
   WorkspaceAccess,
   WorkspaceRole,
   type WorkspaceTier,
 } from "@/generated/prisma/client";
-import { requireSessionUser, type SessionUser } from "@/lib/auth/session";
+import type { SessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { resolveActiveWorkspaceId } from "@/lib/workspaces/active";
 import { createWorkspaceForUser } from "@/lib/workspaces/bootstrap";
@@ -13,7 +14,7 @@ import {
   WORKSPACE_READ_ONLY_HINT,
 } from "@/lib/workspaces/capabilities";
 import { isCrossWorkspaceMiss } from "@/lib/workspaces/access";
-import { readActiveWorkspaceCookie } from "@/lib/workspaces/cookie";
+import { getMembershipContext } from "@/lib/workspaces/membership-context";
 
 export { isCrossWorkspaceMiss };
 
@@ -59,56 +60,50 @@ function toCurrentWorkspace(
   };
 }
 
-export async function getCurrentWorkspace(): Promise<CurrentWorkspace | null> {
-  const session = await requireSessionUser();
-  if (!session.ok) {
-    return null;
-  }
+/**
+ * Request-deduped current workspace (React.cache). AppNav list + page loaders
+ * share one membership snapshot via `getMembershipContext`.
+ */
+export const getCurrentWorkspace = cache(
+  async (): Promise<CurrentWorkspace | null> => {
+    const context = await getMembershipContext();
+    if (!context.ok) {
+      return null;
+    }
 
-  const userId = session.user.id;
+    const { user, cookieWorkspaceId, dbWorkspaceId, memberships } =
+      context.data;
 
-  const [cookieWorkspaceId, userRow, memberships] = await Promise.all([
-    readActiveWorkspaceCookie(),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { activeWorkspaceId: true },
-    }),
-    prisma.workspaceMember.findMany({
-      where: { userId },
-      orderBy: { createdAt: "asc" },
-      include: { workspace: true },
-    }),
-  ]);
+    if (memberships.length > 0) {
+      const activeId = resolveActiveWorkspaceId({
+        cookieWorkspaceId,
+        dbWorkspaceId,
+        membershipWorkspaceIds: memberships.map((m) => m.workspaceId),
+      });
 
-  if (memberships.length > 0) {
-    const activeId = resolveActiveWorkspaceId({
-      cookieWorkspaceId,
-      dbWorkspaceId: userRow?.activeWorkspaceId,
-      membershipWorkspaceIds: memberships.map((m) => m.workspaceId),
+      const membership =
+        memberships.find((m) => m.workspaceId === activeId) ?? memberships[0];
+
+      return toCurrentWorkspace(membership, user);
+    }
+
+    const workspace = await createWorkspaceForUser(prisma, {
+      userId: user.id,
+      name: user.name,
+      email: user.email,
     });
 
-    const membership =
-      memberships.find((m) => m.workspaceId === activeId) ?? memberships[0];
-
-    return toCurrentWorkspace(membership, session.user);
-  }
-
-  const workspace = await createWorkspaceForUser(prisma, {
-    userId,
-    name: session.user.name,
-    email: session.user.email,
-  });
-
-  return {
-    id: workspace.id,
-    name: workspace.name,
-    slug: workspace.slug,
-    tier: workspace.tier,
-    role: WorkspaceRole.OWNER,
-    access: WorkspaceAccess.FULL,
-    user: session.user,
-  };
-}
+    return {
+      id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug,
+      tier: workspace.tier,
+      role: WorkspaceRole.OWNER,
+      access: WorkspaceAccess.FULL,
+      user,
+    };
+  },
+);
 
 export async function requireWorkspace(): Promise<
   { ok: true; workspace: CurrentWorkspace } | { ok: false; message: string }
