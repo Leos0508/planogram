@@ -74,7 +74,7 @@ export default function MembersSettingsClient({
       setInvite({
         id: result.data.id,
         token: result.data.token,
-        expiresAtLabel: result.data.expiresAt.toLocaleString(),
+        expiresAtLabel: new Date(result.data.expiresAt).toLocaleString(),
       });
       const url = inviteUrl(result.data.token);
       try {

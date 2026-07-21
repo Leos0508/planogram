@@ -1,4 +1,5 @@
 import PlanogramsPageClient from "@/components/planograms-page-client";
+import { RouteLoadingPanel } from "@/components/route-status";
 import { getPlanograms } from "@/lib/planograms/queries";
 import { canWriteWorkspace } from "@/lib/workspaces/capabilities";
 import { requireWorkspace } from "@/lib/workspaces/current";
@@ -29,16 +30,7 @@ export default async function PlanogramsPage() {
     canWrite && atPlanogramLimit ? freePlanogramLimitMessage() : null;
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <h1 className="font-heading text-base font-semibold uppercase tracking-wider">
-            Planograms
-          </h1>
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<RouteLoadingPanel />}>
       <PlanogramsPageClient
         planograms={planograms.data}
         canWrite={canWrite}

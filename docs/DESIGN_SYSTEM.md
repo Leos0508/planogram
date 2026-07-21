@@ -331,6 +331,7 @@ Before shipping a new page or panel:
 |---------|----------|
 | Theme tokens | `app/globals.css` |
 | Button variants | `components/ui/button.tsx` |
+| Route error / loading / not-found | `components/route-status.tsx`, `app/(app)/{error,not-found}.tsx`, `app/(app)/planograms/loading.tsx`, `app/(app)/skus/loading.tsx` |
 | Canvas checkered bg | `.canvas-checkered` in `globals.css` |
 | Utils | `lib/utils.ts` (`cn`) |
 | Roadmap / backlog | [Linear — Planogram](https://linear.app/planogram/project/planogram) |

@@ -1,8 +1,8 @@
-import NotFound from "@/components/not-found";
 import SkuPackagingEditor from "@/components/sku-packaging-editor";
 import { getSku } from "@/lib/skus/queries";
 import { canWriteWorkspace } from "@/lib/workspaces/capabilities";
 import { requireWorkspace } from "@/lib/workspaces/current";
+import { notFound } from "next/navigation";
 
 export default async function SkuPackagingEditorPage({
   params,
@@ -19,7 +19,7 @@ export default async function SkuPackagingEditorPage({
   const skuResult = await getSku(id);
   if (!skuResult.ok) {
     if (skuResult.code === "NOT_FOUND") {
-      return <NotFound />;
+      notFound();
     }
     throw new Error(skuResult.message);
   }
