@@ -1,32 +1,21 @@
-import { auth } from "@/auth";
 import NavMenu from "@/components/nav-menu";
-import { prisma } from "@/lib/prisma";
+import { requireSessionUser } from "@/lib/auth/session";
 import { listMyWorkspaces } from "@/lib/workspaces/queries";
 
 export default async function AppNav() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const session = await requireSessionUser();
+  if (!session.ok) {
     return <NavMenu user={null} workspaces={[]} />;
   }
 
-  const [user, workspacesResult] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { name: true, email: true },
-    }),
-    listMyWorkspaces(),
-  ]);
+  const workspacesResult = await listMyWorkspaces();
 
   return (
     <NavMenu
-      user={
-        user
-          ? { name: user.name, email: user.email }
-          : {
-              name: session.user.name,
-              email: session.user.email,
-            }
-      }
+      user={{
+        name: session.user.name,
+        email: session.user.email,
+      }}
       workspaces={workspacesResult.ok ? workspacesResult.data : []}
     />
   );

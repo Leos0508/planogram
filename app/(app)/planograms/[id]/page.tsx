@@ -17,8 +17,10 @@ export default async function PlanogramPage({
     throw new Error(access.message);
   }
 
-  const planogramResult = await getPlanogram(id);
-  const skusResult = await getSkus();
+  const [planogramResult, skusResult] = await Promise.all([
+    getPlanogram(id),
+    getSkus(),
+  ]);
 
   if (!skusResult.ok) {
     if (skusResult.code === "NOT_FOUND") {
