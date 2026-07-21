@@ -112,11 +112,14 @@ test.describe("authenticated smoke", () => {
     const createButton = page.getByRole("button", { name: "Create invite link" });
     const copyButton = page.getByRole("button", { name: "Copy link" });
 
-    if (await createButton.isVisible()) {
+    if (await copyButton.isVisible().catch(() => false)) {
+      // already have an active invite
+    } else {
+      await expect(createButton).toBeVisible();
       await createButton.click();
     }
 
-    await expect(copyButton).toBeVisible();
+    await expect(copyButton).toBeVisible({ timeout: 15_000 });
     await expect(page.locator("code")).toContainText("/invite/");
   });
 

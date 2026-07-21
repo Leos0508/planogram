@@ -1,5 +1,5 @@
 import { RouteLoadingPanel } from "@/components/route-status";
 
-export default function AppLoading() {
+export default function SkusLoading() {
   return <RouteLoadingPanel />;
 }
