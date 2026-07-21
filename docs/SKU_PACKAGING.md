@@ -1,6 +1,6 @@
 # Parametric SKU packaging (can / bottle)
 
-Plan 02 S3–S4: optional **can** and **bottle** packaging specs on `SKU`, low-poly mesh, and a dedicated packaging editor with live 2D/3D preview.
+Plan 02 S3–S4 (**Done**): optional **can** and **bottle** packaging specs on `SKU`, low-poly mesh, dedicated packaging editor with live 2D/3D preview, and read-only planogram 3D scaffold.
 
 | Piece | Issue | Code |
 | --- | --- | --- |

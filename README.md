@@ -33,13 +33,16 @@ Open [http://localhost:3000](http://localhost:3000).
 | `pnpm typecheck` | TypeScript (`tsc --noEmit`) |
 | `pnpm test` | Vitest unit tests (engine) |
 | `pnpm test:e2e` | Playwright smoke (auth, catalogs, settings) + multi-workspace (`e2e/multi-workspace.spec.ts`) |
+| `pnpm screenshots` | Full-page route captures → `e2e/screenshots/` (UI audit; app must be running) |
 | `pnpm build` / `pnpm start` | Production build |
 
-First E2E run installs Chromium via Playwright:
+First E2E / screenshot run installs Chromium via Playwright:
 
 ```bash
 pnpm exec playwright install chromium
 pnpm test:e2e
+# optional UI audit artifacts (dev server on :3000):
+pnpm screenshots
 ```
 
 ## CI
@@ -59,6 +62,6 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 - Sentry: [`docs/SENTRY_SETUP.md`](docs/SENTRY_SETUP.md)
 - Seed SKUs: [`docs/SEED_SKU_SPECS.md`](docs/SEED_SKU_SPECS.md)
 - SKU batch import: [`docs/SKU_IMPORT.md`](docs/SKU_IMPORT.md) · [`docs/examples/sku-import-example.csv`](docs/examples/sku-import-example.csv)
-- Parametric can/bottle packaging: [`docs/SKU_PACKAGING.md`](docs/SKU_PACKAGING.md)
+- Parametric can/bottle packaging + editors / planogram 3D: [`docs/SKU_PACKAGING.md`](docs/SKU_PACKAGING.md)
 - Blob: [`docs/BLOB_SMOKE_TEST.md`](docs/BLOB_SMOKE_TEST.md)
 - Workspace: [`docs/WORKSPACE_MIGRATION.md`](docs/WORKSPACE_MIGRATION.md) · [`docs/WORKSPACE_TENANCY_TEST.md`](docs/WORKSPACE_TENANCY_TEST.md)
