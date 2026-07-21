@@ -65,9 +65,9 @@ Shared form helpers: `lib/skus/form-state.ts`.
 ## Out of scope (current)
 
 - Batch import of parametric columns ([`docs/SKU_IMPORT.md`](SKU_IMPORT.md) stays face-on fields)
-- Mesh silhouette polish ([PLA-89](https://linear.app/planogram/issue/PLA-89/refine-canbottle-packaging-mesh-preview))
 - Square packs / other shapes
 - Migrating already-seeded flat SKUs in existing workspaces (new/empty catalogs get parametric payloads — [PLA-97](https://linear.app/planogram/issue/PLA-97/seed-parametric-canbottle-packaging-payloads))
+- Photoreal textures / brand artwork
 
 ## Related
 

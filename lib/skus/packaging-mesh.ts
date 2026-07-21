@@ -21,7 +21,17 @@ type ProfileRing = { y: number; radius: number };
 
 const DEFAULT_RADIAL_SEGMENTS = 12;
 /** Samples along each body→lid quarter-ellipse (excluding the shared body endpoint). */
-const ARCH_SAMPLES = 4;
+const ARCH_SAMPLES = 6;
+/**
+ * Minimum shoulder arch height as a fraction of body diameter so tiny ΔD
+ * (seed cans often 1–2 mm) still reads as a shoulder.
+ */
+const ARCH_HEIGHT_FLOOR_FRAC = 0.06;
+/** Top indent depth relative to the top arch height. */
+const INDENT_DEPTH_FRAC = 0.9;
+const INDENT_INNER_RIM_FRAC = 0.94;
+const INDENT_WELL_FRAC = 0.68;
+const INDENT_CENTER_FRAC = 0.28;
 
 function clampSegments(value: number | undefined): number {
   if (value == null || !Number.isFinite(value)) return DEFAULT_RADIAL_SEGMENTS;
@@ -30,13 +40,15 @@ function clampSegments(value: number | undefined): number {
 
 /**
  * Vertical height (mm) of the shoulder arch from body to a lid.
- * Template: arch height = body diameter − lid diameter (0 when lid ≥ body).
+ * Uses Δdiameter, floored so small lid deltas still read as a shoulder.
  */
 export function shoulderArchHeightMm(
   bodyDiameterMm: number,
   lidDiameterMm: number,
 ): number {
-  return Math.max(0, bodyDiameterMm - lidDiameterMm);
+  const delta = Math.max(0, bodyDiameterMm - lidDiameterMm);
+  if (delta <= 0) return 0;
+  return Math.max(delta, bodyDiameterMm * ARCH_HEIGHT_FLOOR_FRAC);
 }
 
 /** Axis-aligned extents of a mesh in mm (for tests / framing). */
@@ -70,7 +82,7 @@ export function meshBounds(mesh: PackagingMesh): {
 
 /**
  * Quarter-ellipse from a larger body radius down to a smaller lid radius.
- * Horizontal semi-axis = Δradius; vertical semi-axis = archHeight (= Δdiameter).
+ * Horizontal semi-axis = Δradius; vertical semi-axis = archHeight.
  */
 function appendNeckArch(
   rings: ProfileRing[],
@@ -147,16 +159,16 @@ function appendTopIndent(
   const { endRadius, rimY, archHeight, canHeight } = args;
   if (archHeight <= 0 || endRadius <= 0) return;
 
-  const maxDepth = Math.max(0, rimY - canHeight * 0.15);
-  const indentDepth = Math.min(archHeight * 0.5, maxDepth, endRadius);
+  const maxDepth = Math.max(0, rimY - canHeight * 0.12);
+  const indentDepth = Math.min(archHeight * INDENT_DEPTH_FRAC, maxDepth, endRadius);
   if (indentDepth <= 0) return;
 
-  const innerRim = endRadius * 0.92;
-  const wellRadius = endRadius * 0.72;
+  const innerRim = endRadius * INDENT_INNER_RIM_FRAC;
+  const wellRadius = endRadius * INDENT_WELL_FRAC;
   rings.push({ y: rimY, radius: innerRim });
-  rings.push({ y: rimY - indentDepth, radius: wellRadius });
+  rings.push({ y: rimY - indentDepth * 0.55, radius: wellRadius });
   // Center vertex sits at this last ring's Y (dish floor).
-  rings.push({ y: rimY - indentDepth, radius: wellRadius * 0.35 });
+  rings.push({ y: rimY - indentDepth, radius: wellRadius * INDENT_CENTER_FRAC });
 }
 
 function canProfile(packaging: Extract<SkuPackaging, { shape: "CAN" }>): ProfileRing[] {
@@ -213,17 +225,52 @@ function bottleProfile(
   packaging: Extract<SkuPackaging, { shape: "BOTTLE" }>,
 ): ProfileRing[] {
   const h = packaging.heightMm;
-  const bodyR = packaging.bodyDiameterMm / 2;
+  const bodyD = packaging.bodyDiameterMm;
+  const bodyR = bodyD / 2;
   const neckR = packaging.neckDiameterMm / 2;
   const baseR = packaging.baseDiameterMm / 2;
-  return [
-    { y: 0, radius: baseR },
-    { y: h * 0.06, radius: bodyR },
-    { y: h * 0.55, radius: bodyR },
-    { y: h * 0.72, radius: (bodyR + neckR) / 2 },
-    { y: h * 0.88, radius: neckR },
-    { y: h, radius: neckR },
-  ];
+
+  let baseArch = shoulderArchHeightMm(bodyD, packaging.baseDiameterMm);
+  let shoulderArch = shoulderArchHeightMm(bodyD, packaging.neckDiameterMm);
+
+  const neckCylinder = Math.min(h * 0.12, Math.max(8, h * 0.08));
+  const yShoulderTop = h - neckCylinder;
+  const yBodyTop = Math.max(baseArch + 1, yShoulderTop - shoulderArch);
+
+  // Scale arches if they crowd the bottle height.
+  const usable = Math.max(1, yShoulderTop - 1);
+  if (baseArch + shoulderArch > usable * 0.9) {
+    const scale = (usable * 0.9) / (baseArch + shoulderArch);
+    baseArch *= scale;
+    shoulderArch *= scale;
+  }
+
+  const rings: ProfileRing[] = [];
+  appendBaseArch(rings, {
+    bodyRadius: bodyR,
+    baseRadius: baseR,
+    archHeight: baseArch,
+  });
+
+  const bodyTop = Math.max(baseArch + 1, yShoulderTop - shoulderArch);
+  if (bodyTop > rings[rings.length - 1]!.y + 1e-6) {
+    rings.push({ y: bodyTop, radius: bodyR });
+  }
+
+  appendNeckArch(rings, {
+    bodyRadius: bodyR,
+    lidRadius: neckR,
+    yBody: bodyTop,
+    archHeight: Math.max(0, yShoulderTop - bodyTop),
+    skipBodyEndpoint: true,
+  });
+
+  // Straight neck finish.
+  if (h > rings[rings.length - 1]!.y + 1e-6) {
+    rings.push({ y: h, radius: neckR });
+  }
+
+  return rings;
 }
 
 function packagingProfile(packaging: SkuPackaging): ProfileRing[] {

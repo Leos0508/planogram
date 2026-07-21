@@ -24,9 +24,13 @@ const sampleBottle: SkuPackaging = {
 };
 
 describe("shoulderArchHeightMm", () => {
-  it("equals body diameter minus lid diameter", () => {
-    expect(shoulderArchHeightMm(66, 65)).toBe(1);
-    expect(shoulderArchHeightMm(66, 64)).toBe(2);
+  it("floors tiny diameter deltas so shoulders still read", () => {
+    expect(shoulderArchHeightMm(66, 65)).toBeCloseTo(66 * 0.06, 5);
+    expect(shoulderArchHeightMm(66, 64)).toBeCloseTo(66 * 0.06, 5);
+  });
+
+  it("uses the raw delta when it exceeds the floor", () => {
+    expect(shoulderArchHeightMm(66, 50)).toBe(16);
   });
 
   it("is zero when lid is not smaller than body", () => {
@@ -50,10 +54,10 @@ describe("buildPackagingMesh", () => {
     expect(bounds.maxZ - bounds.minZ).toBeCloseTo(66, 5);
   });
 
-  it("uses diameter-difference arches and a recessed top center", () => {
+  it("uses floored arches and a recessed top center", () => {
     const mesh = buildPackagingMesh(sampleCan, { radialSegments: 12 });
-    const topArch = shoulderArchHeightMm(66, 65); // 1
-    const baseArch = shoulderArchHeightMm(66, 64); // 2
+    const topArch = shoulderArchHeightMm(66, 65);
+    const baseArch = shoulderArchHeightMm(66, 64);
 
     // Rim stays at full height with end radius.
     const rimRadii: number[] = [];
@@ -65,7 +69,7 @@ describe("buildPackagingMesh", () => {
     }
     expect(rimRadii.some((r) => Math.abs(r - 32.5) < 1e-6)).toBe(true);
 
-    // Top center (r≈0) is indented below the rim by up to half the top arch.
+    // Top center (r≈0) is indented below the rim.
     let topCenterY = -Infinity;
     for (let i = 0; i < mesh.vertices.length; i += 3) {
       const r = Math.hypot(mesh.vertices[i]!, mesh.vertices[i + 2]!);
@@ -74,7 +78,8 @@ describe("buildPackagingMesh", () => {
       if (y > topCenterY) topCenterY = y;
     }
     expect(topCenterY).toBeLessThan(115);
-    expect(topCenterY).toBeGreaterThanOrEqual(115 - topArch * 0.5 - 1e-6);
+    expect(topCenterY).toBeGreaterThanOrEqual(115 - topArch * 0.9 - 1e-6);
+    expect(topCenterY).toBeLessThan(115 - topArch * 0.4);
 
     // Body cylinder exists between base and top arches.
     const bodyYs: number[] = [];
@@ -87,7 +92,7 @@ describe("buildPackagingMesh", () => {
     expect(Math.max(...bodyYs)).toBeCloseTo(115 - topArch, 5);
   });
 
-  it("builds a taller bottle with a narrower neck top", () => {
+  it("builds a taller bottle with a narrower neck top and arched shoulder", () => {
     const mesh = buildPackagingMesh(sampleBottle, { radialSegments: 12 });
     const bounds = meshBounds(mesh);
 
@@ -110,7 +115,16 @@ describe("buildPackagingMesh", () => {
       expect(r).toBeCloseTo(14, 5);
     }
 
-    expect(mesh.vertices.length / 3).toBe(6 * 12 + 2);
+    // Arched bottle has more than the old 6 hard-coded rings.
+    expect(mesh.vertices.length / 3).toBeGreaterThan(6 * 12 + 2);
+
+    // Body radius appears on the silhouette (straight wall between arches).
+    const bodyRadii: number[] = [];
+    for (let i = 0; i < mesh.vertices.length; i += 3) {
+      const r = Math.hypot(mesh.vertices[i]!, mesh.vertices[i + 2]!);
+      if (Math.abs(r - 32.5) < 1e-6) bodyRadii.push(r);
+    }
+    expect(bodyRadii.length).toBeGreaterThan(0);
   });
 
   it("can and bottle differ in topology at the same radial resolution", () => {
