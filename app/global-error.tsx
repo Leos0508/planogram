@@ -1,7 +1,10 @@
 "use client";
 
+import { RouteErrorPanel } from "@/components/route-status";
+import { ThemeProvider } from "@/components/theme-provider";
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import "./globals.css";
 
 export default function GlobalError({
   error,
@@ -15,20 +18,13 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="en">
-      <body className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 font-sans">
-        <h1 className="text-lg font-semibold">Something went wrong</h1>
-        <p className="max-w-md text-center text-sm text-neutral-600">
-          An unexpected error occurred. Try again, or contact support if it
-          keeps happening.
-        </p>
-        <button
-          type="button"
-          className="border border-neutral-300 px-3 py-1.5 text-sm"
-          onClick={() => reset()}
-        >
-          Try again
-        </button>
+    <html lang="en" suppressHydrationWarning>
+      <body className="flex min-h-screen flex-col font-sans antialiased">
+        <ThemeProvider>
+          <div className="flex min-h-screen flex-1 flex-col bg-background text-foreground">
+            <RouteErrorPanel reset={reset} digest={error.digest} />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,9 +1,9 @@
 import PlanogramEditorLayout from "@/components/planogram-editor-layout";
-import NotFound from "@/components/not-found";
 import { getPlanogram } from "@/lib/planograms/queries";
 import { getSkus } from "@/lib/skus/queries";
 import { canWriteWorkspace } from "@/lib/workspaces/capabilities";
 import { requireWorkspace } from "@/lib/workspaces/current";
+import { notFound } from "next/navigation";
 
 export default async function PlanogramPage({
   params,
@@ -22,14 +22,14 @@ export default async function PlanogramPage({
 
   if (!skusResult.ok) {
     if (skusResult.code === "NOT_FOUND") {
-      return <NotFound />;
+      notFound();
     }
     throw new Error(skusResult.message);
   }
 
   if (!planogramResult.ok) {
     if (planogramResult.code === "NOT_FOUND") {
-      return <NotFound />;
+      notFound();
     }
     throw new Error(planogramResult.message);
   }
