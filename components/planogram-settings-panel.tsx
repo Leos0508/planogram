@@ -63,7 +63,11 @@ export default function PlanogramSettingsPanel({
 
     const itemFloor = Math.max(
       MIN_SHELF_WIDTH_MM,
-      ...shelves.map((shelf) => minContentWidthFloorMm(shelf.items)),
+      ...shelves.map((shelf) =>
+        minContentWidthFloorMm(
+          shelf.items.map((item) => ({ ...item, shelfId: shelf.id })),
+        ),
+      ),
     );
     if (width < itemFloor) {
       setError(`Fixture width must be at least ${itemFloor} mm`);
