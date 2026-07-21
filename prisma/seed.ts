@@ -5,7 +5,8 @@ import { SEED_CATALOG_SKUS } from "../lib/skus/seed-catalog";
 import { skuColorFromKey } from "../lib/validation/sku";
 
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
+  connectionString:
+    process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL!,
 });
 const prisma = new PrismaClient({ adapter });
 
