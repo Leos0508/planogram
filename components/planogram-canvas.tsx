@@ -5,6 +5,7 @@ import type { PlanogramDragState } from "@/hooks/use-planogram-drag";
 import type { ShelfResizeState } from "@/hooks/use-shelf-resize";
 import type { ShelfWidthResizeState } from "@/hooks/use-shelf-width-resize";
 import type { PlanogramLayout, PlanogramState } from "@/lib/planogram-engine";
+import { shelfDisplayLabel } from "@/lib/planograms/shelf-label";
 import type { Sku } from "@/lib/skus/queries";
 import { useMemo } from "react";
 
@@ -105,7 +106,7 @@ export default function PlanogramCanvas({
             top: toCanvasPxY(shelf.yMm, originY),
           }}
         >
-          Shelf {shelf.index}
+          {shelfDisplayLabel(shelf.index)}
         </span>
       ))}
 

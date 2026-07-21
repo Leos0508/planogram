@@ -9,6 +9,7 @@ import {
   updatePlanogram,
 } from "@/lib/planograms/actions";
 import type { PlanogramDetail } from "@/lib/planograms/queries";
+import { shelfDisplayLabel } from "@/lib/planograms/shelf-label";
 import { parseNonNegativeInt } from "@/lib/validation/sku";
 import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import { PlusIcon, Trash2Icon } from "lucide-react";
@@ -177,7 +178,7 @@ export default function PlanogramSettingsPanel({
               className="flex items-center justify-between gap-2 border bg-card px-3 py-2 text-sm"
             >
               <span className="font-mono text-xs">
-                Shelf {shelf.index + 1}
+                {shelfDisplayLabel(shelf.index)}
                 <span className="ml-2 text-muted-foreground">
                   {shelf.items.length} item{shelf.items.length === 1 ? "" : "s"}
                 </span>
