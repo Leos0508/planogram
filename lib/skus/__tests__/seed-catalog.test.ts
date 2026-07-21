@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  deriveFaceOnMm,
+  parseSkuPackaging,
+  readStoredPackaging,
+} from "@/lib/skus/packaging";
+import {
   SEED_CATALOG_SKUS,
   seedCatalogForWorkspace,
 } from "@/lib/skus/seed-catalog";
@@ -17,6 +22,27 @@ describe("SEED_CATALOG_SKUS", () => {
       expect(row.width).toBeGreaterThan(0);
       expect(row.height).toBeGreaterThan(0);
       expect(row.name.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("stores parametric shape + packaging that round-trip to face-on mm", () => {
+    for (const row of SEED_CATALOG_SKUS) {
+      expect(row.shape === "CAN" || row.shape === "BOTTLE").toBe(true);
+      if (row.sku.startsWith("CAN-")) {
+        expect(row.shape).toBe("CAN");
+      } else {
+        expect(row.shape).toBe("BOTTLE");
+      }
+
+      const parsed = parseSkuPackaging(row.shape, row.packaging);
+      expect(parsed.ok).toBe(true);
+      if (!parsed.ok) return;
+
+      expect(deriveFaceOnMm(parsed.data)).toEqual({
+        width: row.width,
+        height: row.height,
+      });
+      expect(readStoredPackaging(row.shape, row.packaging)).toEqual(parsed.data);
     }
   });
 });
@@ -61,6 +87,8 @@ describe("seedCatalogForWorkspace", () => {
         name: row.name,
         width: row.width,
         height: row.height,
+        shape: row.shape,
+        packaging: row.packaging,
         color: skuColorFromKey(row.sku),
       })),
       skipDuplicates: true,

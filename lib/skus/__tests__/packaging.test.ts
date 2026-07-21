@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   deriveFaceOnMm,
+  packagingFromFaceOn,
   parseSkuPackaging,
   readStoredPackaging,
   resolveSkuDimensions,
@@ -18,6 +19,36 @@ describe("deriveFaceOnMm", () => {
         capacityMl: 330,
       }),
     ).toEqual({ width: 66, height: 115 });
+  });
+});
+
+describe("packagingFromFaceOn", () => {
+  it("builds a can payload that preserves face-on mm", () => {
+    const packaging = packagingFromFaceOn("CAN", { width: 66, height: 115 }, 330);
+    expect(packaging).toMatchObject({
+      shape: "CAN",
+      bodyDiameterMm: 66,
+      heightMm: 115,
+      endDiameterMm: 65,
+      baseDiameterMm: 64,
+      capacityMl: 330,
+    });
+    expect(deriveFaceOnMm(packaging)).toEqual({ width: 66, height: 115 });
+    expect(parseSkuPackaging("CAN", packaging).ok).toBe(true);
+  });
+
+  it("builds a bottle payload with neck smaller than body", () => {
+    const packaging = packagingFromFaceOn(
+      "BOTTLE",
+      { width: 65, height: 210 },
+      500,
+    );
+    expect(packaging.shape).toBe("BOTTLE");
+    if (packaging.shape !== "BOTTLE") return;
+    expect(packaging.neckDiameterMm).toBeLessThan(packaging.bodyDiameterMm);
+    expect(packaging.neckDiameterMm).toBeLessThanOrEqual(28);
+    expect(deriveFaceOnMm(packaging)).toEqual({ width: 65, height: 210 });
+    expect(parseSkuPackaging("BOTTLE", packaging).ok).toBe(true);
   });
 });
 
