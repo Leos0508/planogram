@@ -14,6 +14,7 @@ import {
   type ExportSku,
   renderPlanogramSvg,
 } from "@/lib/planogram-export/render-svg";
+import { shelfDisplayLabel } from "@/lib/planograms/shelf-label";
 
 export type ExportSkuDetail = ExportSku & {
   id: string;
@@ -134,7 +135,7 @@ export function renderPlanogramExportHtml({
       const minWidth = source?.minContentWidthMm ?? layout.contentWidthMm;
       const minHeight = source?.minContentHeightMm ?? shelf.contentHeightMm;
       return `<tr>
-        <td>Shelf ${shelf.index + 1}</td>
+        <td>${shelfDisplayLabel(shelf.index)}</td>
         <td>${layout.contentWidthMm}</td>
         <td>${minWidth}</td>
         <td>${shelf.contentHeightMm}</td>

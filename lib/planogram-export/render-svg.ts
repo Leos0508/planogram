@@ -10,6 +10,7 @@ import {
   type ExportSvgFit,
 } from "@/lib/planogram-export/export-visual";
 import { printHtmlDocument } from "@/lib/planogram-export/print-html";
+import { shelfDisplayLabel } from "@/lib/planograms/shelf-label";
 
 export type ExportSku = {
   name: string;
@@ -71,7 +72,7 @@ export function renderPlanogramSvg({
         <rect x="${CANVAS_LABEL_PADDING_PX}" y="${rowTopPx}" width="${shelfWidthPx}" height="${clearancePx}" fill="#f4f4f5" />
         <rect x="${CANVAS_LABEL_PADDING_PX}" y="${contentTopPx}" width="${shelfWidthPx}" height="${contentHeightPx}" fill="#fafafa" stroke="#e4e4e7" />
         <line x1="${CANVAS_LABEL_PADDING_PX}" y1="${lineY}" x2="${CANVAS_LABEL_PADDING_PX + shelfWidthPx}" y2="${lineY}" stroke="#71717a" stroke-width="2" />
-        <text x="${CANVAS_LABEL_PADDING_PX - 12}" y="${lineY}" text-anchor="end" dominant-baseline="middle" font-family="ui-monospace, monospace" font-size="12" fill="#71717a">Shelf ${shelf.index + 1}</text>
+        <text x="${CANVAS_LABEL_PADDING_PX - 12}" y="${lineY}" text-anchor="end" dominant-baseline="middle" font-family="ui-monospace, monospace" font-size="12" fill="#71717a">${shelfDisplayLabel(shelf.index)}</text>
       `;
     })
     .join("");

@@ -3,6 +3,10 @@ import type {
   RectMm,
   ShelfLayout,
 } from "@/lib/planogram-engine/types";
+import {
+  shelfDisplayLabel,
+  shelfDisplayNumber,
+} from "@/lib/planograms/shelf-label";
 
 /** Above this shelf count, overview uses a tighter fit-to-page scale. */
 export const EXPORT_OVERVIEW_SCALE_AFTER = 3;
@@ -120,8 +124,8 @@ export function slicePlanogramLayout(
 
 export function shelfSectionLabel(shelves: ShelfLayout[]): string {
   if (shelves.length === 0) return "Shelves";
-  const first = shelves[0].index + 1;
-  const last = shelves[shelves.length - 1].index + 1;
-  if (first === last) return `Shelf ${first}`;
+  const first = shelfDisplayNumber(shelves[0].index);
+  const last = shelfDisplayNumber(shelves[shelves.length - 1].index);
+  if (first === last) return shelfDisplayLabel(shelves[0].index);
   return `Shelves ${first}–${last}`;
 }
