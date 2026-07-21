@@ -2,12 +2,12 @@
 
 import DragItemPreview from "@/components/drag-item-preview";
 import EditorBottomMenu from "@/components/editor-bottom-menu";
-import Planogram3DPreview from "@/components/planogram-3d-preview";
 import PlanogramCanvas from "@/components/planogram-canvas";
 import PlanogramItemInspector from "@/components/planogram-item-inspector";
 import PlanogramViewport, {
   type PlanogramViewMode,
 } from "@/components/planogram-viewport";
+import { RouteLoadingPanel } from "@/components/route-status";
 import { useToast } from "@/components/toast-provider";
 import { useCanvasViewport } from "@/hooks/use-canvas-viewport";
 import {
@@ -61,8 +61,16 @@ import {
   renderPlanogramSvg,
 } from "@/lib/planogram-export/render-svg";
 import type { Sku } from "@/lib/skus/queries";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+const Planogram3DPreview = dynamic(
+  () => import("@/components/planogram-3d-preview"),
+  {
+    ssr: false,
+    loading: () => <RouteLoadingPanel />,
+  },
+);
 function isEditableTarget(target: EventTarget | null) {
   const element = target as HTMLElement | null;
   if (!element) return false;
