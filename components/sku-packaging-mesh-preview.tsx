@@ -5,6 +5,8 @@ import {
   useRef,
   useState,
   type ComponentProps,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
@@ -36,6 +38,18 @@ export function PackagingMeshCanvas({
   className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    lastX: number;
+    lastY: number;
+  } | null>(null);
+  const orbitRef = useRef({ yaw: 0.55, pitch: 0.35, distanceScale: 1 });
+  const apiRef = useRef<{
+    camera: THREE.PerspectiveCamera;
+    mesh: THREE.Object3D;
+    radius: number;
+    render: () => void;
+  } | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -47,7 +61,7 @@ export function PackagingMeshCanvas({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#f4f4f5");
 
-    const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 5000);
+    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 5000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
@@ -65,41 +79,64 @@ export function PackagingMeshCanvas({
     const material = new THREE.MeshStandardMaterial({
       color: new THREE.Color(color),
       flatShading: true,
-      metalness: 0.05,
-      roughness: 0.65,
+      metalness: 0.08,
+      roughness: 0.55,
     });
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
     const edges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(geometry, 25),
-      new THREE.LineBasicMaterial({ color: "#27272a", transparent: true, opacity: 0.35 }),
+      new THREE.EdgesGeometry(geometry, 22),
+      new THREE.LineBasicMaterial({
+        color: "#27272a",
+        transparent: true,
+        opacity: 0.28,
+      }),
     );
     mesh.add(edges);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.85);
-    const key = new THREE.DirectionalLight(0xffffff, 0.7);
-    key.position.set(120, 220, 160);
-    const fill = new THREE.DirectionalLight(0xffffff, 0.25);
-    fill.position.set(-100, 80, -120);
-    scene.add(ambient, key, fill);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+    const key = new THREE.DirectionalLight(0xffffff, 0.95);
+    key.position.set(140, 240, 180);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.35);
+    fill.position.set(-120, 60, -140);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.2);
+    rim.position.set(40, -80, 160);
+    scene.add(ambient, key, fill, rim);
 
     geometry.computeBoundingSphere();
     const radius = geometry.boundingSphere?.radius ?? packaging.heightMm;
     const center = geometry.boundingSphere?.center ?? new THREE.Vector3();
     mesh.position.sub(center);
 
-    const distance = radius * 3.2;
-    camera.position.set(distance * 0.7, distance * 0.45, distance * 0.85);
-    camera.lookAt(0, 0, 0);
+    const applyCamera = () => {
+      const { yaw, pitch, distanceScale } = orbitRef.current;
+      const distance = radius * 3.05 * distanceScale;
+      const cp = Math.cos(pitch);
+      camera.position.set(
+        Math.sin(yaw) * cp * distance,
+        Math.sin(pitch) * distance,
+        Math.cos(yaw) * cp * distance,
+      );
+      camera.lookAt(0, 0, 0);
+    };
+    applyCamera();
+
+    const render = () => {
+      applyCamera();
+      renderer.render(scene, camera);
+    };
+    apiRef.current = { camera, mesh, radius, render };
 
     let frame = 0;
     let disposed = false;
     const animate = () => {
       if (disposed) return;
       frame = requestAnimationFrame(animate);
-      mesh.rotation.y += 0.008;
-      renderer.render(scene, camera);
+      if (!dragRef.current) {
+        orbitRef.current.yaw += 0.006;
+      }
+      render();
     };
     animate();
 
@@ -109,6 +146,7 @@ export function PackagingMeshCanvas({
       camera.aspect = nextWidth / nextHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(nextWidth, nextHeight);
+      render();
     };
     window.addEventListener("resize", onResize);
 
@@ -116,6 +154,7 @@ export function PackagingMeshCanvas({
       disposed = true;
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", onResize);
+      apiRef.current = null;
       geometry.dispose();
       material.dispose();
       edges.geometry.dispose();
@@ -127,11 +166,51 @@ export function PackagingMeshCanvas({
     };
   }, [packaging, color]);
 
+  const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      lastX: event.clientX,
+      lastY: event.clientY,
+    };
+  };
+
+  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const dx = event.clientX - drag.lastX;
+    const dy = event.clientY - drag.lastY;
+    drag.lastX = event.clientX;
+    drag.lastY = event.clientY;
+    orbitRef.current.yaw -= dx * 0.01;
+    orbitRef.current.pitch = Math.max(
+      -1.2,
+      Math.min(1.2, orbitRef.current.pitch + dy * 0.01),
+    );
+  };
+
+  const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+    }
+  };
+
+  const onWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const next = orbitRef.current.distanceScale * (event.deltaY > 0 ? 1.08 : 0.92);
+    orbitRef.current.distanceScale = Math.max(0.55, Math.min(2.4, next));
+  };
+
   return (
     <div
       ref={containerRef}
-      className={className}
-      aria-label="Packaging mesh preview"
+      className={`${className} touch-none cursor-grab active:cursor-grabbing`}
+      aria-label="Packaging mesh preview. Drag to orbit, scroll to zoom."
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onWheel={onWheel}
     />
   );
 }
@@ -145,7 +224,7 @@ export function SkuPackagingMeshPreviewButton({
   color,
   packaging,
   disabled,
-  disabledReason = "Add can/bottle packaging to preview 3D",
+  disabledReason = "Set can or bottle packaging to open the 3D mesh preview",
   variant = "ghost",
   size = "icon-sm",
   label,
@@ -208,15 +287,18 @@ export function SkuPackagingMeshPreviewButton({
                 packaging={target.packaging}
                 color={target.color}
               />
-              <p className="font-mono text-xs text-muted-foreground">
-                {Math.round(target.packaging.bodyDiameterMm)} ×{" "}
-                {Math.round(target.packaging.heightMm)} mm face-on · read-only
-                preview
+              <p className="text-xs text-muted-foreground">
+                Drag to orbit · scroll to zoom ·{" "}
+                <span className="font-mono">
+                  {Math.round(target.packaging.bodyDiameterMm)} ×{" "}
+                  {Math.round(target.packaging.heightMm)} mm
+                </span>{" "}
+                face-on
               </p>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Add can/bottle packaging to preview 3D.
+              Set can or bottle packaging on this SKU to preview its mesh.
             </p>
           )}
 
