@@ -42,10 +42,16 @@ async function main() {
         width: data.width,
         height: data.height,
         color,
+        // Do not rewrite shape/packaging on re-seed — existing catalogs stay as-is.
       },
       create: {
         workspaceId: workspace.id,
-        ...data,
+        sku: data.sku,
+        name: data.name,
+        width: data.width,
+        height: data.height,
+        shape: data.shape,
+        packaging: data.packaging,
         color,
       },
     });

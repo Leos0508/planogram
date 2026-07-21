@@ -86,6 +86,37 @@ export function deriveFaceOnMm(packaging: SkuPackaging): FaceOnMm {
   };
 }
 
+/**
+ * Build a sensible can/bottle payload from face-on W×H (D07: body = width, height = height).
+ * Ratios match packaging editor defaults / tests (end≈body−1, base≈body−2; neck≤28).
+ */
+export function packagingFromFaceOn(
+  shape: SkuShape,
+  face: FaceOnMm,
+  capacityMl?: number,
+): SkuPackaging {
+  const body = face.width;
+  const height = face.height;
+  if (shape === "CAN") {
+    return {
+      shape: "CAN",
+      bodyDiameterMm: body,
+      heightMm: height,
+      endDiameterMm: Math.max(1, body - 1),
+      baseDiameterMm: Math.max(1, body - 2),
+      ...(capacityMl != null ? { capacityMl } : {}),
+    };
+  }
+  return {
+    shape: "BOTTLE",
+    bodyDiameterMm: body,
+    heightMm: height,
+    neckDiameterMm: Math.min(28, Math.max(1, Math.round(body * 0.4))),
+    baseDiameterMm: Math.max(1, body - 5),
+    ...(capacityMl != null ? { capacityMl } : {}),
+  };
+}
+
 function validateCan(
   source: Record<string, unknown>,
 ): PackagingParseResult {
@@ -251,12 +282,12 @@ export function resolveSkuDimensions(input: {
   const parsed = parseSkuPackaging(input.shape, input.packaging);
   if (!parsed.ok) return parsed;
 
-  const { shape: _shape, ...payload } = parsed.data;
+  const { shape, ...payload } = parsed.data;
   return {
     ok: true,
     width: parsed.face.width,
     height: parsed.face.height,
-    shape: parsed.data.shape,
+    shape,
     packaging: payload,
   };
 }
