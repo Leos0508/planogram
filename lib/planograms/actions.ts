@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/lib/result";
+import { MIN_SHELF_WIDTH_MM } from "@/lib/planogram-engine/constant";
 import { isValidSkuFootprint } from "@/lib/validation/sku";
 import { validatePlanogramName } from "@/lib/planograms/validation";
 import {
@@ -444,8 +445,11 @@ export async function updatePlanogramShelfMinWidth(input: {
   syncAllShelves?: boolean;
 }): Promise<ActionResult<PlanogramShelfRecord>> {
   const minContentWidthMm = Math.round(input.minContentWidthMm);
-  if (minContentWidthMm < 1) {
-    return { ok: false, message: "Shelf width must be at least 1 mm" };
+  if (minContentWidthMm < MIN_SHELF_WIDTH_MM) {
+    return {
+      ok: false,
+      message: `Shelf width must be at least ${MIN_SHELF_WIDTH_MM} mm`,
+    };
   }
 
   try {
