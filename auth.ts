@@ -3,6 +3,7 @@ import { compare } from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import authConfig from "@/auth.config";
+import { shouldCheckPasswordChangedAt } from "@/lib/auth/pwd-check";
 import { prisma } from "@/lib/prisma";
 
 async function passwordChangedAtMs(userId: string): Promise<number | null> {
@@ -34,10 +35,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Stamp from DB (not `user.*`) — Auth.js strips custom Credentials fields.
         const changedAt = await passwordChangedAtMs(user.id);
         token.pwdChangedAt = changedAt ?? 0;
+        token.pwdCheckedAt = Date.now();
         return token;
       }
 
       if (!token.sub) {
+        return token;
+      }
+
+      const decision = shouldCheckPasswordChangedAt({
+        nowMs: Date.now(),
+        pwdCheckedAt:
+          typeof token.pwdCheckedAt === "number" ? token.pwdCheckedAt : undefined,
+      });
+      if (decision.action === "skip") {
         return token;
       }
 
@@ -55,6 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return null;
       }
 
+      token.pwdCheckedAt = Date.now();
       return token;
     },
   },
