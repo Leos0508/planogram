@@ -33,6 +33,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | TypeScript (`tsc --noEmit`) |
 | `pnpm test` | Vitest unit tests (engine) |
+| `pnpm test -- --coverage lib/planogram-engine` | Engine coverage report (see [`docs/ENGINE_COVERAGE.md`](docs/ENGINE_COVERAGE.md)) |
 | `pnpm test:e2e` | Playwright smoke (auth, catalogs, settings) + multi-workspace (`e2e/multi-workspace.spec.ts`) |
 | `pnpm screenshots` | Full-page UI audit captures (light/dark, editors 2D/3D) → `e2e/screenshots/` — see [`docs/UI_SCREENSHOT_AUDIT.md`](docs/UI_SCREENSHOT_AUDIT.md) |
 | `pnpm build` / `pnpm start` | Production build |
@@ -57,6 +58,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 
 - Roadmap: [Linear — Planogram](https://linear.app/planogram/project/planogram) · [Plan 01 (complete)](https://linear.app/planogram/document/development-plan-product-ux-and-platform-plan-01-bfde90020196) · [Plan 02 (advanced)](https://linear.app/planogram/document/development-plan-advanced-product-plan-02-45e4ae89a60f)
 - Design system: [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)
+- Engine coverage + canvas width checklist: [`docs/ENGINE_COVERAGE.md`](docs/ENGINE_COVERAGE.md)
 - Email: [`docs/EMAIL_SETUP.md`](docs/EMAIL_SETUP.md) · [`docs/EMAIL_SMOKE_TEST.md`](docs/EMAIL_SMOKE_TEST.md)
 - Billing (test): [`docs/BILLING_SMOKE_TEST.md`](docs/BILLING_SMOKE_TEST.md)
 - Stripe live cutover: [`docs/STRIPE_LIVE_GO_LIVE.md`](docs/STRIPE_LIVE_GO_LIVE.md)
