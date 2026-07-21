@@ -235,7 +235,6 @@ function bottleProfile(
 
   const neckCylinder = Math.min(h * 0.12, Math.max(8, h * 0.08));
   const yShoulderTop = h - neckCylinder;
-  const yBodyTop = Math.max(baseArch + 1, yShoulderTop - shoulderArch);
 
   // Scale arches if they crowd the bottle height.
   const usable = Math.max(1, yShoulderTop - 1);

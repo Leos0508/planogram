@@ -3,14 +3,20 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MIN_SHELF_WIDTH_MM } from "@/lib/planogram-engine/constant";
+import { minContentWidthFloorMm } from "@/lib/planogram-engine/layout";
 import {
   addPlanogramShelf,
   removePlanogramShelf,
   updatePlanogram,
+  updatePlanogramShelfMinWidth,
 } from "@/lib/planograms/actions";
 import type { PlanogramDetail } from "@/lib/planograms/queries";
 import { shelfDisplayLabel } from "@/lib/planograms/shelf-label";
-import { parseNonNegativeInt } from "@/lib/validation/sku";
+import {
+  parseNonNegativeInt,
+  parsePositiveInt,
+} from "@/lib/validation/sku";
 import { WORKSPACE_READ_ONLY_HINT } from "@/lib/workspaces/capabilities";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -28,11 +34,14 @@ export default function PlanogramSettingsPanel({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const shelves = [...planogram.shelves].sort((a, b) => a.index - b.index);
+  const sharedFixtureWidthMm =
+    shelves[0]?.minContentWidthMm ?? MIN_SHELF_WIDTH_MM;
+
   const [name, setName] = useState(planogram.name);
   const [topClearance, setTopClearance] = useState(String(planogram.topClearance));
   const [stackGap, setStackGap] = useState(String(planogram.stackGap));
-
-  const shelves = [...planogram.shelves].sort((a, b) => a.index - b.index);
+  const [fixtureWidth, setFixtureWidth] = useState(String(sharedFixtureWidthMm));
 
   const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
@@ -42,8 +51,28 @@ export default function PlanogramSettingsPanel({
 
     const clearance = parseNonNegativeInt(topClearance);
     const gap = parseNonNegativeInt(stackGap);
+    const width = parsePositiveInt(fixtureWidth);
     if (clearance === null || gap === null) {
       setError("Clearance and gap must be non-negative integers (mm)");
+      return;
+    }
+    if (width === null) {
+      setError("Fixture width must be a positive integer (mm)");
+      return;
+    }
+
+    const itemFloor = Math.max(
+      MIN_SHELF_WIDTH_MM,
+      ...shelves.map((shelf) => minContentWidthFloorMm(shelf.items)),
+    );
+    if (width < itemFloor) {
+      setError(`Fixture width must be at least ${itemFloor} mm`);
+      return;
+    }
+
+    const anchorShelfId = shelves[0]?.id;
+    if (!anchorShelfId) {
+      setError("Add a shelf before setting fixture width");
       return;
     }
 
@@ -58,6 +87,18 @@ export default function PlanogramSettingsPanel({
         setError(result.message);
         return;
       }
+
+      const widthResult = await updatePlanogramShelfMinWidth({
+        planogramId: planogram.id,
+        shelfId: anchorShelfId,
+        minContentWidthMm: width,
+        syncAllShelves: true,
+      });
+      if (!widthResult.ok) {
+        setError(widthResult.message);
+        return;
+      }
+
       setMessage("Settings saved");
       router.refresh();
     });
@@ -145,6 +186,24 @@ export default function PlanogramSettingsPanel({
           </div>
         </div>
 
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="settings-fixture-width">Fixture width (mm)</Label>
+          <Input
+            id="settings-fixture-width"
+            type="number"
+            min={MIN_SHELF_WIDTH_MM}
+            value={fixtureWidth}
+            onChange={(event) => setFixtureWidth(event.target.value)}
+            className="font-mono"
+            required
+            disabled={!canWrite || pending}
+          />
+          <p className="text-xs text-muted-foreground">
+            Shared across shelves (same as drag-resize). Empty shelves keep this
+            width; placement cannot exceed it.
+          </p>
+        </div>
+
         {canWrite ? (
           <Button type="submit" size="sm" disabled={pending}>
             Save settings
@@ -181,6 +240,7 @@ export default function PlanogramSettingsPanel({
                 {shelfDisplayLabel(shelf.index)}
                 <span className="ml-2 text-muted-foreground">
                   {shelf.items.length} item{shelf.items.length === 1 ? "" : "s"}
+                  <span className="ml-2">· {shelf.minContentWidthMm} mm</span>
                 </span>
               </span>
               {canWrite ? (
