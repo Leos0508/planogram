@@ -1,6 +1,6 @@
 # UI screenshot audit (`pnpm screenshots`)
 
-Plan 02 S5 evidence base for owner UI review ([PLA-94](https://linear.app/planogram/issue/PLA-94/expand-playwright-screenshot-capture-for-ui-audit), [PLA-95](https://linear.app/planogram/issue/PLA-95/owner-ui-screenshot-review-and-refinement-backlog)).
+Evidence base for owner UI review ([PLA-94](https://linear.app/planogram/issue/PLA-94/expand-playwright-screenshot-capture-for-ui-audit), [PLA-95](https://linear.app/planogram/issue/PLA-95/owner-ui-screenshot-review-and-refinement-backlog)). Plan 02 S5 complete.
 
 ## Prerequisites
 
