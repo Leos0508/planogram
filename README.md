@@ -56,7 +56,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 
 ## Docs
 
-- Roadmap: [Linear — Planogram](https://linear.app/planogram/project/planogram) · [Plan 01 (complete)](https://linear.app/planogram/document/development-plan-product-ux-and-platform-plan-01-bfde90020196) · [Plan 02 (advanced)](https://linear.app/planogram/document/development-plan-advanced-product-plan-02-45e4ae89a60f)
+- Roadmap: [Linear — Planogram](https://linear.app/planogram/project/planogram) · [Plan 01 (complete)](https://linear.app/planogram/document/development-plan-product-ux-and-platform-plan-01-bfde90020196) · [Plan 02 (complete)](https://linear.app/planogram/document/development-plan-advanced-product-plan-02-45e4ae89a60f)
 - Design system: [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)
 - Engine coverage + canvas width checklist: [`docs/ENGINE_COVERAGE.md`](docs/ENGINE_COVERAGE.md)
 - Email: [`docs/EMAIL_SETUP.md`](docs/EMAIL_SETUP.md) · [`docs/EMAIL_SMOKE_TEST.md`](docs/EMAIL_SMOKE_TEST.md)
@@ -66,6 +66,6 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 - Seed SKUs: [`docs/SEED_SKU_SPECS.md`](docs/SEED_SKU_SPECS.md)
 - SKU batch import: [`docs/SKU_IMPORT.md`](docs/SKU_IMPORT.md) · [`docs/examples/sku-import-example.csv`](docs/examples/sku-import-example.csv)
 - Parametric can/bottle packaging + editors / planogram 3D: [`docs/SKU_PACKAGING.md`](docs/SKU_PACKAGING.md)
-- UI screenshot audit (Plan 02 S5): [`docs/UI_SCREENSHOT_AUDIT.md`](docs/UI_SCREENSHOT_AUDIT.md)
+- UI screenshot audit: [`docs/UI_SCREENSHOT_AUDIT.md`](docs/UI_SCREENSHOT_AUDIT.md)
 - Blob: [`docs/BLOB_SMOKE_TEST.md`](docs/BLOB_SMOKE_TEST.md)
 - Workspace: [`docs/WORKSPACE_MIGRATION.md`](docs/WORKSPACE_MIGRATION.md) · [`docs/WORKSPACE_TENANCY_TEST.md`](docs/WORKSPACE_TENANCY_TEST.md)
