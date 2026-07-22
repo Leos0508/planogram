@@ -49,3 +49,4 @@ Themes use `next-themes` via `localStorage.theme` (`light` / `dark`).
 - If the workspace has no planogram, the script creates **Screenshot audit**.
 - This is a **review artifact** runner — not a visual-regression CI gate.
 - Script: `scripts/capture-routes.mjs`.
+- README marketing shots: copy curated PNGs to `docs/readme/` (committed; see root `README.md`).
