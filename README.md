@@ -6,17 +6,33 @@ Retail shelf layout editor — place SKUs on shelves in millimeters, adjust faci
 
 ## Screenshots
 
-Captured from a local dev run (`pnpm screenshots` → curated under `docs/readme/`).
+Light-theme captures from `pnpm screenshots` (curated in `docs/readme/`).
 
-| Planogram editor (2D) | Planogram editor (3D) |
-| --- | --- |
-| ![Planogram editor — 2D shelf layout](docs/readme/planogram-editor-2d.png) | ![Planogram editor — 3D preview](docs/readme/planogram-editor-3d.png) |
+### Planogram editor (2D)
+
+Drag SKUs from the bottom tray onto shelves; fixture width and shelf settings in the sidebar.
+
+![Planogram editor — 2D shelf layout with SKU tray](docs/readme/planogram-editor-2d.png)
+
+### Planogram editor (3D)
+
+Read-only WebGL preview from the same layout — orbit and zoom in the viewport.
+
+![Planogram editor — 3D preview](docs/readme/planogram-editor-3d.png)
+
+### SKU catalog & packaging editor
+
+Workspace SKU list with import; per-SKU packaging editor with live 2D face preview.
 
 | SKU catalog | Packaging editor |
 | --- | --- |
-| ![SKU catalog](docs/readme/sku-catalog.png) | ![SKU packaging editor with 2D/3D preview](docs/readme/sku-packaging-editor.png) |
+| ![SKU catalog with seed cans and bottles](docs/readme/sku-catalog.png) | ![SKU packaging editor — Slim can 250 ml](docs/readme/sku-packaging-editor.png) |
 
-| Planogram list | Billing (Free / Unlimited) |
+### Planograms & billing
+
+Catalog list and workspace billing (Free / Unlimited upgrade path).
+
+| Planogram list | Billing |
 | --- | --- |
 | ![Planogram list](docs/readme/planogram-list.png) | ![Workspace billing settings](docs/readme/billing.png) |
 
