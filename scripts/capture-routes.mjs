@@ -84,6 +84,45 @@ async function captureCurrent(page, name) {
   console.log(`  ✓ ${pathname} → ${path.relative(process.cwd(), file)}`);
 }
 
+/** Wait for RouteLoadingPanel / dynamic chunk loaders to finish. */
+async function waitForLoadingHidden(page, timeout = 30_000) {
+  const loading = page.getByRole("status", { name: "Loading" });
+  const appeared = await loading
+    .waitFor({ state: "visible", timeout: 3_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (appeared) {
+    await loading.waitFor({ state: "hidden", timeout });
+  }
+}
+
+/** Planogram editor shell is interactive (2D toolbar visible). */
+async function waitForPlanogramEditor2d(page) {
+  await waitForLoadingHidden(page);
+  await page
+    .getByRole("button", { name: "Open 3D preview" })
+    .waitFor({ state: "visible", timeout: 30_000 });
+  await page.getByText(/^Shelf 1$/).waitFor({ state: "visible", timeout: 15_000 });
+}
+
+/** 3D preview toolbar + a short paint beat for WebGL. */
+async function waitForPlanogramEditor3d(page) {
+  await waitForLoadingHidden(page);
+  await page
+    .getByRole("button", { name: "Switch to 2D editor" })
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.waitForTimeout(1_000);
+}
+
+/** SKU packaging editor form + previews mounted. */
+async function waitForPackagingEditor(page) {
+  await waitForLoadingHidden(page);
+  await page
+    .getByRole("link", { name: "Back to SKUs" })
+    .waitFor({ state: "visible", timeout: 30_000 });
+  await page.locator("#pack-name").waitFor({ state: "visible", timeout: 15_000 });
+}
+
 /**
  * Apply next-themes preference and wait for the `dark` class to match.
  * @param {import('@playwright/test').Page} page
@@ -148,7 +187,7 @@ async function openPackagingEditor(page) {
   await editorLink.waitFor({ state: "visible", timeout: 15_000 });
   await editorLink.click();
   await page.waitForURL(/\/skus\/[^/]+$/, { timeout: 15_000 });
-  await page.waitForLoadState("networkidle");
+  await waitForPackagingEditor(page);
 }
 
 /**
@@ -164,7 +203,7 @@ async function openPlanogramEditor(page) {
   if ((await existing.count()) > 0) {
     await existing.click();
     await page.waitForURL(/\/planograms\/[^/]+$/, { timeout: 15_000 });
-    await page.waitForLoadState("networkidle");
+    await waitForPlanogramEditor2d(page);
     return;
   }
 
@@ -172,7 +211,7 @@ async function openPlanogramEditor(page) {
   await page.locator("#planogram-name").fill("Screenshot audit");
   await page.getByRole("button", { name: "Create" }).click();
   await page.waitForURL(/\/planograms\/[^/]+$/, { timeout: 15_000 });
-  await page.waitForLoadState("networkidle");
+  await waitForPlanogramEditor2d(page);
 }
 
 /**
@@ -187,8 +226,7 @@ async function setPlanogramViewMode(page, mode) {
       await page
         .getByRole("button", { name: "Switch to 2D editor" })
         .waitFor({ state: "visible", timeout: 10_000 });
-      // Allow WebGL canvas a beat to paint.
-      await page.waitForTimeout(500);
+      await waitForPlanogramEditor3d(page);
     }
     return;
   }
@@ -199,6 +237,7 @@ async function setPlanogramViewMode(page, mode) {
     await page
       .getByRole("button", { name: "Open 3D preview" })
       .waitFor({ state: "visible", timeout: 10_000 });
+    await waitForPlanogramEditor2d(page);
   }
 }
 
@@ -245,9 +284,11 @@ async function main() {
 
       await openPlanogramEditor(page);
       await setPlanogramViewMode(page, "2d");
+      await waitForPlanogramEditor2d(page);
       await captureCurrent(page, `planogram-editor-2d-${theme}`);
 
       await setPlanogramViewMode(page, "3d");
+      await waitForPlanogramEditor3d(page);
       await captureCurrent(page, `planogram-editor-3d-${theme}`);
       console.log("");
     }
