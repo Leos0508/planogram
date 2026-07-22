@@ -2,6 +2,24 @@
 
 Retail shelf layout editor — place SKUs on shelves in millimeters, adjust facings, and export SVG/PDF.
 
+**Planogram is a vibe-coding project:** built in public, iteratively, with AI-assisted development (Cursor + human review) rather than a waterfall spec. The goal is a real, usable SaaS-shaped app — workspace tenancy, billing hooks, parametric packaging, 2D/3D editors — while learning and shipping in small PRs. Issues and roadmap live in [Linear](https://linear.app/planogram/project/planogram); this repo is intended to be **open source** under the [MIT License](LICENSE).
+
+## Screenshots
+
+Captured from a local dev run (`pnpm screenshots` → curated under `docs/readme/`).
+
+| Planogram editor (2D) | Planogram editor (3D) |
+| --- | --- |
+| ![Planogram editor — 2D shelf layout](docs/readme/planogram-editor-2d.png) | ![Planogram editor — 3D preview](docs/readme/planogram-editor-3d.png) |
+
+| SKU catalog | Packaging editor |
+| --- | --- |
+| ![SKU catalog](docs/readme/sku-catalog.png) | ![SKU packaging editor with 2D/3D preview](docs/readme/sku-packaging-editor.png) |
+
+| Planogram list | Billing (Free / Unlimited) |
+| --- | --- |
+| ![Planogram list](docs/readme/planogram-list.png) | ![Workspace billing settings](docs/readme/billing.png) |
+
 ## Stack
 
 - Next.js 16 (App Router) + React 19
@@ -69,3 +87,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 - UI screenshot audit: [`docs/UI_SCREENSHOT_AUDIT.md`](docs/UI_SCREENSHOT_AUDIT.md)
 - Blob: [`docs/BLOB_SMOKE_TEST.md`](docs/BLOB_SMOKE_TEST.md)
 - Workspace: [`docs/WORKSPACE_MIGRATION.md`](docs/WORKSPACE_MIGRATION.md) · [`docs/WORKSPACE_TENANCY_TEST.md`](docs/WORKSPACE_TENANCY_TEST.md)
+
+## License
+
+[MIT](LICENSE) — SPDX `MIT`. See [`LICENSE`](LICENSE) for the full text.
